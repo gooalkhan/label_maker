@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Food Labeling SVG Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<div id="app">
+    <header>
+        <h1>Food Labeling SVG Generator</h1>
+        <div class="actions">
+            <button id="save-btn">Save SVG</button>
+        </div>
+    </header>
+    <main>
+        <section id="editor-pane">
+            <h2>Configuration (JSON)</h2>
+            <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
+            <div id="validation-msg"></div>
+        </section>
+        <section id="preview-pane">
+            <div id="overflow-warning" class="warning-bar">
+                ⚠️ <strong>Content Overflow:</strong> The text cannot fit within the legal minimum font size (10pt). Please enlarge the label or reduce the content.
+            </div>
+            <h2>Live Preview</h2>
+            <div id="svg-container">
+                <!-- SVG will be rendered here -->
+            </div>
+        </section>
+    </main>
+</div>
+<script src="./src/main.js" type="module"></script>
+</body>
+</html>
