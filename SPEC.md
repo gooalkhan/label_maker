@@ -42,6 +42,7 @@
     "nutrition_mode": "bottom",
     "global_padding": 2, // mm
     "border_thickness": 0.5, // mm
+    "horizontal_scale": 1.0, // 0.9 to 1.0 (장평)
     "font_family": "NanumGothic"
   },
   "main_table": {
@@ -91,9 +92,9 @@ func (a *App) SaveSVG(content string, defaultName string) error {
 - `exportToBackend()`: Converts SVG DOM to XML string and calls `window.go.main.App.SaveSVG`.
 
 ### 5.3 Rendering Logic Constraints
-- **Line-based Flow Algorithm**:
-  - The engine tracks the current "Line" and the "X-cursor".
-  - **No-Break Logic**: If `no_break: true` and the cell's estimated width + X-cursor > Available Width, the entire cell must move to the beginning of the next line.
+- **Line-based Flow**: Cells are standard as flow elements. They wrap to a new line if they exceed the remaining width.
+- **Header-less Cells**: Cells without a `header` property always start on a new line for better visual separation.
+- **No-Break Constraint**: Optional `no_break: true` ensures Header and Content stay together on the same line. If the cell's estimated width + X-cursor > Available Width, the entire cell must move to the beginning of the next line.
   - **Continuity**: The *next* cell starts immediately at the end of the previous cell's content (unless restricted by breaking rules).
 - **Right-anchored Placeholder Logic**:
   - Placeholder cells (e.g., certification marks) are always anchored to the **far right**.
@@ -103,6 +104,11 @@ func (a *App) SaveSVG(content string, defaultName string) error {
   - Independent scaling for the Nutrition Facts container.
 - **Global Styling**:
   - Universal `padding` and `border_thickness` applied from `label_config`.
+  - Borders are perfectly overlapped (100% thickness overlap) to ensure that shared lines maintain the same single thickness as outer borders.
+- **Horizontal Scaling (장평)**:
+  - Text width is multiplied by `horizontal_scale` during measurement.
+  - SVG `<text>` elements use `textLength` and `lengthAdjust="spacingAndGlyphs"` to apply the scaling visually.
+  - Reduced horizontal scale naturally affects line-breaking by fitting more characters per line.
 - **Legal Reference**: Conform to '식품등의 표시기준', using a **10pt** baseline.
 
 ## 6. UI/UX Requirements

@@ -7,6 +7,8 @@ const svgContainer = document.getElementById('svg-container');
 const saveBtn = document.getElementById('save-btn');
 const validationMsg = document.getElementById('validation-msg');
 const overflowWarning = document.getElementById('overflow-warning');
+const scaleSlider = document.getElementById('horizontal-scale-slider');
+const scaleValueDisplay = document.getElementById('scale-value');
 
 // Initial Sample Data (Complex with Nutrition)
 const initialData = {
@@ -15,7 +17,9 @@ const initialData = {
         height: 120,
         nutrition_mode: "bottom", // bottom | left | right
         global_padding: 5,
+        cell_padding: 1.5,
         border_thickness: 0.5,
+        horizontal_scale: 1.0,
         font_family: "NanumGothic"
     },
     main_table: {
@@ -65,8 +69,19 @@ function updatePreview() {
 
         console.log(`Render complete. Main FS: ${result.mainFontSize}pt, Nutrition FS: ${result.nutritionFontSize}pt`);
 
+        // Sync Slider with JSON (if horizontal_scale exists)
+        if (data.label_config && data.label_config.horizontal_scale !== undefined) {
+            const scalePct = Math.round(data.label_config.horizontal_scale * 100);
+            scaleSlider.value = scalePct;
+            scaleValueDisplay.innerText = scalePct;
+        }
+
     } catch (e) {
-        validationMsg.innerText = 'Invalid JSON: ' + e.message;
+        if (e instanceof SyntaxError) {
+            validationMsg.innerText = 'Invalid JSON: ' + e.message;
+        } else {
+            validationMsg.innerText = 'Render Error: ' + e.message;
+        }
         validationMsg.className = 'error';
         console.error(e);
         overflowWarning.classList.remove('visible');
@@ -90,6 +105,22 @@ window.saveSVG = function() {
 
 saveBtn.addEventListener('click', window.saveSVG);
 jsonInput.addEventListener('input', updatePreview);
+
+// Slider Sync: Update JSON when slider moves
+scaleSlider.addEventListener('input', (e) => {
+    const scaleFactor = parseInt(e.target.value) / 100;
+    scaleValueDisplay.innerText = e.target.value;
+    
+    try {
+        const data = JSON.parse(jsonInput.value);
+        if (!data.label_config) data.label_config = {};
+        data.label_config.horizontal_scale = scaleFactor;
+        jsonInput.value = JSON.stringify(data, null, 4);
+        updatePreview();
+    } catch (err) {
+        console.error("Could not sync slider to JSON:", err);
+    }
+});
 
 // Wait for fonts to load before initial render
 document.fonts.ready.then(() => {

@@ -73,13 +73,44 @@ section {
 #editor-pane {
     border-right: 1px solid var(--border-color);
     background-color: var(--bg-color);
+    gap: 15px;
+}
+
+#global-settings {
+    background-color: var(--pane-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+#global-settings h2 {
+    margin-bottom: 15px;
+    color: #58a6ff;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.setting-item label {
+    font-size: 0.85rem;
+    color: var(--text-color);
+}
+
+.setting-item input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+    accent-color: var(--accent-color);
 }
 
 h2 {
     font-size: 0.9rem;
     text-transform: uppercase;
     color: #8b949e;
-    margin: 0 0 10px 0;
+    margin: 0;
 }
 
 textarea {

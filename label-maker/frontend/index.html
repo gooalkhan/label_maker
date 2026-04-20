@@ -17,6 +17,13 @@
     </header>
     <main>
         <section id="editor-pane">
+            <div id="global-settings">
+                <h2>Global Settings</h2>
+                <div class="setting-item">
+                    <label for="horizontal-scale-slider">장평 (Horizontal Scale): <span id="scale-value">100</span>%</label>
+                    <input type="range" id="horizontal-scale-slider" min="90" max="100" step="1" value="100">
+                </div>
+            </div>
             <h2>Configuration (JSON)</h2>
             <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
             <div id="validation-msg"></div>
