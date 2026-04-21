@@ -38,7 +38,6 @@
 ```json
 {
   "label_config": {
-    "width": 150, "height": 100,
     "nutrition_mode": "bottom",
     "global_padding": 2, // mm
     "border_thickness": 0.5, // mm
@@ -46,6 +45,7 @@
     "font_family": "NanumGothic"
   },
   "main_table": {
+    "width": 130, "height": 110,
     "cells": [
       { 
         "type": "info",
@@ -54,19 +54,28 @@
         "order_locked": true,
         "no_break": true
       },
+      { 
+        "type": "info",
+        "header": "원산지", 
+        "content": "이탈리아",
+        "use_whole_line": true 
+      },
       { "type": "placeholder", "label": "HACCP", "width": 20, "height": 20 }
     ]
   },
   "nutrition_facts": {
-    "width": 100, "height": 40,
-    "data": { "entries": [...] } // Extensible (e.g., Sugar Alcohols)
+    "width": 100, "height": 100,
+    "cells": [
+      { "header": "[[영양정보]]", "no_break": true },
+      { "content": "[[총 내용량...]]", "align": "right", "use_whole_line": true },
+      ...
+    ]
   }
 }
 ```
 - **Main Table**: Implements "Line-based Flow". Cells wrap through horizontal lines.
 - **Placeholders**: Deduct their width from the line's available space at the specific y-offset.
-- **Main Table**: Follows the user's specific width requirement for the information section.
-- **Nutrition Facts**: Decoupled from cells; its position is determined by `nutrition_mode`.
+- **Nutrition Facts**: Uses the same cell-based engine as the Main Table, allowing for flexible grid layouts (horizontal or vertical).
 
 ### 5.2 Interface Definitions (Wails Bridge)
 ...
@@ -93,7 +102,14 @@ func (a *App) SaveSVG(content string, defaultName string) error {
 
 ### 5.3 Rendering Logic Constraints
 - **Line-based Flow**: Cells are standard as flow elements. They wrap to a new line if they exceed the remaining width.
+- **Header Inversion**: Headers are inverted only if wrapped in `[[ ... ]]` tags (e.g., `"header": "[[제품명]]"`). Non-wrapped headers are rendered as standard text fragments.
 - **Header-less Cells**: Cells without a `header` property always start on a new line for better visual separation.
+- **Whole Line Constraint**: Optional `use_whole_line: true` ensures the cell occupies the entire available line width. 
+  - It forces the cell to start on a new line (if not already at the start).
+  - It forces any following cells to start on a new line.
+  - If the cell text wraps, each line it occupies will be stretched to the full width.
+- **Alignment**: Optional `align: "left" | "center" | "right"` (default "left") controls text alignment within the cell's final stretched width.
+- **Indentation**: Optional `indent: number` (mm) adds horizontal padding to the left side of the cell's content/header.
 - **No-Break Constraint**: Optional `no_break: true` ensures Header and Content stay together on the same line. If the cell's estimated width + X-cursor > Available Width, the entire cell must move to the beginning of the next line.
   - **Continuity**: The *next* cell starts immediately at the end of the previous cell's content (unless restricted by breaking rules).
 - **Right-anchored Placeholder Logic**:

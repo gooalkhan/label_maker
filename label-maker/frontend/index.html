@@ -12,6 +12,10 @@
     <header>
         <h1>Food Labeling SVG Generator</h1>
         <div class="actions">
+            <button id="load-horizontal-btn">가로형 샘플</button>
+            <button id="load-vertical-btn">세로형 샘플</button>
+            <button id="save-json-btn">JSON 저장</button>
+            <button id="load-json-btn">JSON 불러오기</button>
             <button id="save-btn">Save SVG</button>
         </div>
     </header>
@@ -26,15 +30,30 @@
             </div>
             <h2>Configuration (JSON)</h2>
             <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
+            <div class="editor-actions">
+                <button id="apply-btn" class="primary-btn">변경사항 적용하기</button>
+            </div>
             <div id="validation-msg"></div>
         </section>
         <section id="preview-pane">
             <div id="overflow-warning" class="warning-bar">
                 ⚠️ <strong>Content Overflow:</strong> The text cannot fit within the legal minimum font size (10pt). Please enlarge the label or reduce the content.
             </div>
-            <h2>Live Preview</h2>
+            <div id="preview-header">
+                <h2>Live Preview</h2>
+                <div id="zoom-controls">
+                    <button id="zoom-out-btn" title="Zoom Out">−</button>
+                    <span id="zoom-level">100%</span>
+                    <button id="zoom-in-btn" title="Zoom In">+</button>
+                    <button id="zoom-reset-btn">Reset</button>
+                </div>
+            </div>
             <div id="svg-container">
                 <!-- SVG will be rendered here -->
+            </div>
+            <div id="font-size-footer">
+                한글표시사항: <span id="main-font-size-val">-</span>pt / 
+                영양성분: <span id="nutr-font-size-val">-</span>pt
             </div>
         </section>
     </main>

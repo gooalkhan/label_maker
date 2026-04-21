@@ -113,6 +113,33 @@ h2 {
     margin: 0;
 }
 
+.editor-actions {
+    margin: 15px 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    font-size: 0.95rem;
+}
+
+.primary-btn:hover {
+    background-color: #2b3a4a;
+    transform: translateY(-1px);
+}
+
+.primary-btn:active {
+    transform: translateY(0);
+}
+
 textarea {
     flex: 1;
     background-color: #010409;
@@ -134,19 +161,79 @@ textarea:focus {
     background-color: #0d1117;
 }
 
+#preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--pane-bg);
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+}
+
+#zoom-controls button {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+#zoom-controls button:hover {
+    background-color: #30363d;
+}
+
+#zoom-controls button#zoom-reset-btn {
+    font-size: 0.75rem;
+    width: auto;
+    padding: 0 8px;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #58a6ff;
+}
+
+#zoom-level {
+    font-size: 0.85rem;
+    font-family: monospace;
+    min-width: 45px;
+    text-align: center;
+}
+
 #overflow-warning {
     display: none;
 }
 
 #svg-container {
     flex: 1;
-    background-color: white; /* Contrast for the label */
-    border-radius: 4px;
+    background-color: #1a1e26; /* Dark background to see label edge */
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: auto;
-    padding: 20px;
+    position: relative;
+    border: 1px solid var(--border-color);
+    padding: 40px;
+}
+
+#svg-container svg {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background-color: white;
+    transform-origin: center center;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #validation-msg {
@@ -170,6 +257,25 @@ textarea:focus {
 .warning-bar.visible {
     display: block;
     animation: fadeIn 0.3s ease-in;
+}
+
+#font-size-footer {
+    padding: 10px 16px;
+    background: #f8f9fa;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    color: #555;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    border-radius: 0 0 8px 8px;
+    z-index: 10;
+}
+
+#font-size-footer span {
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-left: 4px;
 }
 
 @keyframes fadeIn {
