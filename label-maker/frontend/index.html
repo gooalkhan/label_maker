@@ -21,18 +21,69 @@
     </header>
     <main>
         <section id="editor-pane">
-            <div id="global-settings">
+            <div id="global-settings" class="settings-panel">
                 <h2>Global Settings</h2>
-                <div class="setting-item">
-                    <label for="horizontal-scale-slider">장평 (Horizontal Scale): <span id="scale-value">100</span>%</label>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label for="nutrition-mode-select">영양성분 위치</label>
+                        <select id="nutrition-mode-select">
+                            <option value="right">우측 (Right)</option>
+                            <option value="bottom">하단 (Bottom)</option>
+                            <option value="left">좌측 (Left)</option>
+                            <option value="none">숨김 (None)</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="global-padding-input">글로벌 패딩 (mm)</label>
+                        <input type="number" id="global-padding-input" step="0.5" value="3">
+                    </div>
+                    <div class="setting-item">
+                        <label for="cell-padding-input">셀 패딩 (mm)</label>
+                        <input type="number" id="cell-padding-input" step="0.1" value="1.2">
+                    </div>
+                    <div class="setting-item">
+                        <label for="border-thickness-input">테두리 두께 (mm)</label>
+                        <input type="number" id="border-thickness-input" step="0.1" value="0.4">
+                    </div>
+                </div>
+                <div class="setting-item" style="margin-top: 10px;">
+                    <label for="horizontal-scale-slider">장평: <span id="scale-value">100</span>%</label>
                     <input type="range" id="horizontal-scale-slider" min="90" max="100" step="1" value="100">
                 </div>
             </div>
-            <h2>Configuration (JSON)</h2>
-            <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
-            <div class="editor-actions">
-                <button id="apply-btn" class="primary-btn">변경사항 적용하기</button>
+
+            <div class="table-editor-panel">
+                <div class="panel-header">
+                    <h2>한글표시사항 (Main Table)</h2>
+                    <div class="table-dims">
+                        <label>너비:</label>
+                        <input type="number" id="main-width-input" placeholder="W" title="Width (mm)" class="dim-input"> 
+                        <label>높이:</label>
+                        <input type="number" id="main-height-input" placeholder="H" title="Height (mm)" class="dim-input">
+                    </div>
+                    <button id="add-main-cell-btn" class="add-btn">+ 추가</button>
+                </div>
+                <div id="main-cells-list" class="sortable-list" data-table="main_table">
+                    <!-- Cells will be rendered here -->
+                </div>
             </div>
+
+            <div class="table-editor-panel">
+                <div class="panel-header">
+                    <h2>영양성분 (Nutrition Facts)</h2>
+                    <div class="table-dims">
+                        <label>너비:</label>
+                        <input type="number" id="nutr-width-input" placeholder="W" title="Width (mm)" class="dim-input"> 
+                        <label>높이:</label>
+                        <input type="number" id="nutr-height-input" placeholder="H" title="Height (mm)" class="dim-input">
+                    </div>
+                    <button id="add-nutr-cell-btn" class="add-btn">+ 추가</button>
+                </div>
+                <div id="nutrition-cells-list" class="sortable-list" data-table="nutrition_facts">
+                    <!-- Cells will be rendered here -->
+                </div>
+            </div>
+            
             <div id="validation-msg"></div>
         </section>
         <section id="preview-pane">

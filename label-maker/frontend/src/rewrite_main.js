@@ -1,118 +1,21 @@
-import './style.css';
+const fs = require('fs');
+
+const mainJsPath = './main.js';
+const content = fs.readFileSync(mainJsPath, 'utf-8');
+
+const initialDataMatch = content.match(/const initialData = (\{[\s\S]*?\n\});/);
+const verticalDataMatch = content.match(/const verticalData = (\{[\s\S]*?\n\});/);
+
+const initialDataStr = initialDataMatch[1];
+const verticalDataStr = verticalDataMatch[1];
+
+const newMainJs = `import './style.css';
 import { SaveSVG } from '../wailsjs/go/main/App';
 import { Renderer } from './renderer';
 
-const initialData = {
-    label_config: {
-        nutrition_mode: "right",
-        global_padding: 3,
-        cell_padding: 1.2,
-        border_thickness: 0.4,
-        horizontal_scale: 1.0,
-        font_family: "NanumGothic"
-    },
-    main_table: {
-        width: 140,
-        height: 120,
-        cells: [
-            { type: "info", content: "식품등의표시 · 광고에관한법률에 따른 한글표시사항", use_whole_line: true },
-            { type: "info", header: "[[제품명]]", content: "프리미엄 호밀 가공빵(호밀 80% 함유)", no_break: true },
-            { type: "info", header: "[[식품유형]]", content: "빵류", no_break: true },
-            { type: "info", header: "[[원산지]]", content: "{{덴마크}}", no_break: true },
-            { type: "info", header: "[[내용량]]", content: "500g (790Kcal)", no_break: true },
-            { type: "info", header: "[[제조원]]", content: "(주)글로벌푸드코리아", use_whole_line: true },
-            { type: "info", header: "[[수입원]]", content: "주식회사 젤러노트 / 서울특별시 중구 한강대로 416, 서울스퀘어 13층 5호, 25호", use_whole_line: true },
-            { type: "info", header: "[[원재료명]]", content: "호밀 60%, 정제수, 효모, 정제소금, 맥아추출물(고형분함량 100%), 설탕, 사탕무, 식이섬유, 옥수수전분, 밀식이섬유, 유채유, 맥아분말", use_whole_line: true },
-            { type: "placeholder", label: "비닐류 OTHER(LDPE+PP)", width: 25, height: 25 },
-            { type: "info", header: "[[포장기한]]", content: "2024.12.31", no_break: true },
-            { type: "info", header: "[[소비기한]]", content: "제품 별도 표기일까지(읽는법: 일/월/년 순)", no_break: true },
-            { type: "info", header: "[[보관방법]]", content: "직사광선을 피해 건조하고 서늘한곳에 보관", use_whole_line: true },
-            { type: "info", header: "[[반품및교환]]", content: "구입처 및 수입원(T.02-6956-7787)", use_whole_line: true },
-            { type: "info", content: "주 표시면의 이미지는 조리예 및 연출된 예입니다\n우유, 대두, 밀, 호두 함유 가능성 있음\n본 제품은 공정거래위원회의 고시 소비자분쟁해결기준에 의거 교환 또는 보상받을 수 있습니다.\n부정·불량식품 신고는 국번없이 1399", use_whole_line: true }
-        ]
-    },
-    nutrition_facts: {
-        width: 70,
-        height: 120,
-        cells: [
-            { "type": "info", "header": "[[영양정보]]", "no_break": true },
-            { "type": "info", "header": "[[총 내용량 450g / 100g당 210kcal]]", "align": "right", "no_break": true },
-            { "type": "info", "content": "[[나트륨]]", "no_break": true },
-            { "type": "info", "header": "280mg 14 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[탄수화물]]", "no_break": true },
-            { "type": "info", "header": "41g 13 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[당류]]", "no_break": true },
-            { "type": "info", "header": "6g 6 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[지방]]", "no_break": true },
-            { "type": "info", "header": "1.1g 2 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[트랜스지방]]", "no_break": true },
-            { "type": "info", "header": "0g", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[포화지방]]", "no_break": true },
-            { "type": "info", "header": "0.3g 2 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[콜레스테롤]]", "no_break": true },
-            { "type": "info", "header": "0mg 0 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[단백질]]", "no_break": true },
-            { "type": "info", "header": "4.4g 8 %", "no_break": true, "align": "right" },
+const initialData = ${initialDataStr};
 
-            { "type": "info", "content": "1일 영양성분 기준치에 대한 비율(%)은 2,000 kcal 기준이므로 개인의 필요 열량에 따라 다를 수 있습니다.", "use_whole_line": true }
-        ]
-    }
-};
-
-const verticalData = {
-    label_config: {
-        nutrition_mode: "bottom",
-        global_padding: 3,
-        cell_padding: 1.2,
-        border_thickness: 0.4,
-        horizontal_scale: 1.0,
-        font_family: "NanumGothic"
-    },
-    main_table: {
-        width: 130,
-        height: 150,
-        cells: [
-            { type: "info", content: "식품 등의 표시 · 광고에 관한 법률에 의한 한글표시사항", use_whole_line: true },
-            { type: "info", header: "[[제품명]]", content: "냉동브로콜리믹스", no_break: true },
-            { type: "info", header: "[[식품유형]]", content: "과·채가공품(가열하여 섭취하는 냉동식품)", no_break: true },
-            { type: "info", header: "[[업소명 및 소재지]]", content: "제조원 Dujardin Foods NV / 수입판매원 (주)웰팜 / 충청북도 음성군 금왕읍 금일로 546번길 87", use_whole_line: true },
-            { type: "info", header: "[[소비기한]]", content: "2028년 12월 31일 까지", no_break: true },
-            { type: "info", header: "[[내용량]]", content: "1 kg(300kcal)", no_break: true },
-            { type: "info", header: "[[원재료명]]", content: "슬라이스당근 35 %, 콜리플라워 33 %, 브로콜리 32 %", use_whole_line: true },
-            { type: "info", header: "[[원산지]]", content: "{{벨기에}}", no_break: true },
-            { type: "info", header: "[[포장재질(내면)]]", content: "폴리에틸렌", no_break: true },
-            {
-                type: "info",
-                content: "본 제품은 공정거래 위원회고시 소비자분쟁해결기준에 의거 교환 또는 보상받을 수 있습니다. 반품 및 교환 구입처 및 수입판매원 보관방법 -18℃ 이하 냉동보관 해동방법 별도의 해동 없음 주의사항 · 이미 냉동된 바 있으니 해동 후 재냉동시키지 마시길 바랍니다. · 냉동상태에서는 단단할 수 있으니 주의하시기 바랍니다. · 이 제품은 알류(계란), 우유, 메밀, 땅콩, 대두, 밀, 게, 새우, 고등어, 복숭아, 토마토, 돼지고기, 아황산류, 호두, 쇠고기, 닭고기, 오징어, 조개류(굴, 전복, 홍합 포함), 잣을 사용한 제품과 같은 제조 시설에서 제조하고 있습니다. · 특정원료에 대해 알레르기가 있으신 분은 반드시 원재료를 확인하시고 섭취하시기 바랍니다. 자연원행복센터 080-707-2547 (www.jyone.co.kr) · 부정 · 불량 식품 신고는 국번없이 1399",
-                use_whole_line: true
-            },
-            { type: "placeholder", label: "비닐류 LDPE", width: 12, height: 12 },
-            {
-                type: "info",
-                header: "[[요리법 및 활용법]]",
-                content: ". 볶음밥, 수프, 등 다양한 요리로 즐길 수 있으며 새우, 전복과 같은 해산물이나 육류와 곁들여 먹어도 좋습니다. 더 자세한 요리법 및 활용법은 자연원몰(www.jyone.co.kr)에서 확인하세요.",
-                use_whole_line: true
-            }
-        ]
-    },
-    nutrition_facts: {
-        width: 130,
-        height: 60,
-        cells: [
-            { "type": "info", "header": "[[영양정보]]", "no_break": true },
-            { "type": "info", "header": "[[총 내용량 1 kg 100 g당 30 kcal]]", "align": "right", "no_break": true },
-            { "type": "info", "content": "나트륨 20 mg 1 %", "no_break": true },
-            { "type": "info", "header": "탄수화물 3 g 1 %", "no_break": true },
-            { "type": "info", "header": "당류 2.5 g 3 %", "no_break": true },
-            { "type": "info", "header": "지방 0.7 g 1 %", "no_break": true },
-            { "type": "info", "header": "트랜스지방 0 g", "no_break": true },
-            { "type": "info", "header": "포화지방 0.1 g 1 %", "no_break": true },
-            { "type": "info", "header": "콜레스테롤 0 mg 0 %", "no_break": true },
-            { "type": "info", "header": "단백질 2.2 g 4 %", "no_break": true },
-            { "type": "info", "content": "1일 영양성분 기준치에 대한 비율(%)은 2,000 kcal 기준이므로 개인의 필요 열량에 따라 다를 수 있습니다.", "use_whole_line": true }
-        ]
-    }
-};
+const verticalData = ${verticalDataStr};
 
 // --- State Management ---
 let appState = null;
@@ -208,7 +111,7 @@ function createCellElement(cell, index, tableName) {
     typeSelect.className = 'cell-input';
     typeSelect.style.width = '120px';
     typeSelect.style.flex = 'none';
-    typeSelect.innerHTML = `<option value="info">Info</option><option value="placeholder">Placeholder</option>`;
+    typeSelect.innerHTML = \`<option value="info">Info</option><option value="placeholder">Placeholder</option>\`;
     typeSelect.value = cell.type || 'info';
     typeSelect.onchange = (e) => {
         cell.type = e.target.value;
@@ -246,11 +149,11 @@ function createCellElement(cell, index, tableName) {
     if (cell.type === 'placeholder') {
         const dimRow = document.createElement('div');
         dimRow.className = 'cell-row';
-        dimRow.innerHTML = `
-            <input type="number" class="cell-input placeholder-w" value="${cell.width || 20}" placeholder="W (mm)" title="Width (mm)">
-            <input type="number" class="cell-input placeholder-h" value="${cell.height || 20}" placeholder="H (mm)" title="Height (mm)">
-            <input type="text" class="cell-input placeholder-lbl" value="${cell.label || ''}" placeholder="Label Text">
-        `;
+        dimRow.innerHTML = \`
+            <input type="number" class="cell-input placeholder-w" value="\${cell.width || 20}" placeholder="W (mm)" title="Width (mm)">
+            <input type="number" class="cell-input placeholder-h" value="\${cell.height || 20}" placeholder="H (mm)" title="Height (mm)">
+            <input type="text" class="cell-input placeholder-lbl" value="\${cell.label || ''}" placeholder="Label Text">
+        \`;
         
         dimRow.querySelector('.placeholder-w').oninput = (e) => { cell.width = parseFloat(e.target.value) || 0; updatePreview(); };
         dimRow.querySelector('.placeholder-h').oninput = (e) => { cell.height = parseFloat(e.target.value) || 0; updatePreview(); };
@@ -355,7 +258,7 @@ function createCellElement(cell, index, tableName) {
         alignSelect.style.width = '80px';
         alignSelect.style.flex = 'none';
         alignSelect.style.padding = '2px';
-        alignSelect.innerHTML = `<option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>`;
+        alignSelect.innerHTML = \`<option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>\`;
         alignSelect.value = cell.align || 'left';
         alignSelect.onchange = (e) => {
             if(e.target.value === 'left') delete cell.align;
@@ -552,8 +455,8 @@ function bindGlobalListeners() {
 
 function applyZoom() {
     const svg = svgContainer.querySelector('svg');
-    if (svg) svg.style.transform = `scale(${currentZoom})`;
-    zoomLevelDisplay.innerText = `${Math.round(currentZoom * 100)}%`;
+    if (svg) svg.style.transform = \`scale(\${currentZoom})\`;
+    zoomLevelDisplay.innerText = \`\${Math.round(currentZoom * 100)}%\`;
 }
 
 function autoFitZoom() {
@@ -607,3 +510,6 @@ function updatePreview(isInitial = false) {
 document.fonts.ready.then(() => {
     init();
 });
+`;
+
+fs.writeFileSync(mainJsPath, newMainJs, 'utf-8');

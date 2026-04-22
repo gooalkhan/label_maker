@@ -51,7 +51,6 @@
         "type": "info",
         "header": "제품명", 
         "content": "식초", 
-        "order_locked": true,
         "no_break": true
       },
       { 
