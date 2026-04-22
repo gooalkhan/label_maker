@@ -1,5 +1,7 @@
 # Food Label Maker (식품표시사항 생성기)
 
+> **⚠️ 주의사항:** 본 프로젝트로 생성된 한글표시사항은 관계법령에서 정하는 규정을 준수하는 것을 보장하지 않으며, 반드시 개정된 한글표시사항 표기 규정을 확인 바랍니다.
+
 Food Label Maker는 식품 패키지에 부착되는 **한글표시사항** 및 **영양성분표**를 규격에 맞춰 직관적으로 제작할 수 있는 데스크톱 애플리케이션입니다. Wails 프레임워크를 기반으로 제작되어 빠르고 가벼우며, 완벽한 해상도를 보장하는 SVG 포맷으로 결과물을 내보냅니다.
 
 ## ✨ 주요 기능
@@ -86,3 +88,15 @@ sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev build-essential
     *   `src/main.js`: 애플리케이션 상태 관리(appState), 드래그 앤 드롭 로직, GUI 렌더링.
     *   `src/renderer.js`: JSON 상태를 SVG 요소로 변환하고 계산하는 핵심 레이아웃 엔진.
     *   `src/style.css`: UI/UX 디자인 및 스타일.
+
+---
+
+## 📜 라이선스 및 오픈소스
+
+이 프로젝트는 **MIT 라이선스**를 따릅니다. 
+
+본 애플리케이션은 아래의 오픈소스 프로젝트들을 사용하여 제작되었습니다:
+*   [Wails v2](https://wails.io/) - 데스크톱 애플리케이션 프레임워크 (MIT License)
+*   [Vite](https://vitejs.dev/) - 프론트엔드 빌드 툴 (MIT License)
+*   [Go](https://go.dev/) - 프로그래밍 언어 (BSD-style License)
+*   [나눔고딕 (Nanum Gothic)](https://hangeul.naver.com/font) - 네이버 나눔글꼴 (OFL - Open Font License)
