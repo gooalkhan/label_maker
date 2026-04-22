@@ -2,6 +2,10 @@
 
 > **⚠️ 주의사항:** 본 프로젝트로 생성된 한글표시사항은 관계법령에서 정하는 규정을 준수하는 것을 보장하지 않으며, 반드시 개정된 한글표시사항 표기 규정을 확인 바랍니다.
 
+바로 사용해 보기: https://gooalkhan.github.io/label_maker/
+
+데스크톱용 어플리케이션 파일은 [release](https://github.com/gooalkhan/label_maker/releases) 에서 다운로드 받을 수 있습니다.
+
 Food Label Maker는 식품 패키지에 부착되는 **한글표시사항** 및 **영양성분표**를 규격에 맞춰 직관적으로 제작할 수 있는 데스크톱 애플리케이션입니다. Wails 프레임워크를 기반으로 제작되어 빠르고 가벼우며, 완벽한 해상도를 보장하는 SVG 포맷으로 결과물을 내보냅니다.
 
 ## ✨ 주요 기능
@@ -93,7 +97,7 @@ sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev build-essential
 
 ## 📜 라이선스 및 오픈소스
 
-이 프로젝트는 **MIT 라이선스**를 따릅니다. 
+이 프로젝트는 **MIT 라이선스**를 따릅니다.
 
 본 애플리케이션은 아래의 오픈소스 프로젝트들을 사용하여 제작되었습니다:
 *   [Wails v2](https://wails.io/) - 데스크톱 애플리케이션 프레임워크 (MIT License)

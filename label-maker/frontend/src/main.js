@@ -1,6 +1,7 @@
 import './style.css';
 import { SaveSVG } from '../wailsjs/go/main/App';
 import { Renderer } from './renderer';
+import promptFallback from '../../llm_image_to_json_prompt.md?raw';
 
 const initialData = {
     label_config: {
@@ -592,7 +593,8 @@ function bindGlobalListeners() {
                 const promptText = await window.go.main.App.GetLLMPrompt();
                 promptTextarea.value = promptText;
             } else {
-                promptTextarea.value = "Failed to load prompt. Backend not available.";
+                // Web Fallback via Vite ?raw import
+                promptTextarea.value = promptFallback;
             }
         } catch (e) {
             promptTextarea.value = "Error loading prompt: " + e;
