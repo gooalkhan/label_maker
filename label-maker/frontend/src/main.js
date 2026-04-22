@@ -31,7 +31,7 @@ const initialData = {
             { type: "info", content: "식품등의표시 · 광고에관한법률에 따른 한글표시사항", use_whole_line: true },
             { type: "info", header: "[[제품명]]", content: "프리미엄 호밀 가공빵(호밀 80% 함유)", no_break: true },
             { type: "info", header: "[[식품유형]]", content: "빵류", no_break: true },
-            { type: "info", header: "[[원산지]]", content: "덴마크", no_break: true },
+            { type: "info", header: "[[원산지]]", content: "{{덴마크}}", no_break: true },
             { type: "info", header: "[[내용량]]", content: "500g (790Kcal)", no_break: true },
             { type: "info", header: "[[제조원]]", content: "(주)글로벌푸드코리아", use_whole_line: true },
             { type: "info", header: "[[수입원]]", content: "주식회사 젤러노트 / 서울특별시 중구 한강대로 416, 서울스퀘어 13층 5호, 25호", use_whole_line: true },
@@ -92,7 +92,7 @@ const verticalData = {
             { type: "info", header: "[[소비기한]]", content: "2028년 12월 31일 까지", no_break: true },
             { type: "info", header: "[[내용량]]", content: "1 kg(300kcal)", no_break: true },
             { type: "info", header: "[[원재료명]]", content: "슬라이스당근 35 %, 콜리플라워 33 %, 브로콜리 32 %", use_whole_line: true },
-            { type: "info", header: "[[원산지]]", content: "벨기에산", no_break: true },
+            { type: "info", header: "[[원산지]]", content: "{{벨기에}}", no_break: true },
             { type: "info", header: "[[포장재질(내면)]]", content: "폴리에틸렌", no_break: true },
             {
                 type: "info",

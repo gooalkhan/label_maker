@@ -268,6 +268,7 @@ class LayoutEngine {
             placeholders: placedPlaceholders, 
             overflow: overflow, 
             w: w, 
+            padding: padding,
             usedHeight: currentY + padding 
         };
     }
@@ -338,8 +339,16 @@ class SVGBuilder {
     }
 
     static _renderTable(layout, fs, tX, tY, borderThickness) {
+        const padding = layout.padding || 0;
         let group = `<g transform="translate(${tX}, ${tY})">`;
+        
+        // 1. Draw the outermost background and border (no padding)
         group += `<rect x="0" y="0" width="${layout.w}" height="${layout.usedHeight}" fill="white" stroke="black" stroke-width="${borderThickness}"/>`;
+
+        // 2. Draw the inner background and border (with padding) if padding exists
+        if (padding > 0) {
+            group += `<rect x="${padding}" y="${padding}" width="${layout.w - 2 * padding}" height="${layout.usedHeight - 2 * padding}" fill="white" stroke="black" stroke-width="${borderThickness}"/>`;
+        }
 
         // Draw Cell Borders and Backgrounds
         for (const g of layout.logicalGroups) {
@@ -401,6 +410,14 @@ class SVGBuilder {
             }
         }
         
+        // Final borderline overlap for clean edges (no padding)
+        group += `<rect x="0" y="0" width="${layout.w}" height="${layout.usedHeight}" fill="none" stroke="black" stroke-width="${borderThickness}"/>`;
+        
+        // Final borderline overlap for clean edges (with padding) if padding exists
+        if (padding > 0) {
+            group += `<rect x="${padding}" y="${padding}" width="${layout.w - 2 * padding}" height="${layout.usedHeight - 2 * padding}" fill="none" stroke="black" stroke-width="${borderThickness}"/>`;
+        }
+
         group += `</g>`;
         return group;
     }
@@ -477,10 +494,10 @@ export class Renderer {
 
         // Build SVG
         const layoutsToRender = [
-            { layout: mainLayout, fs: mainFontSize, x: mainX, y: mainY }
+            { layout: mainLayout, fs: mainFontSize, x: mainX, y: mainY, padding: mainLayout.padding }
         ];
         if (nutritionLayout) {
-            layoutsToRender.push({ layout: nutritionLayout, fs: nutritionFontSize, x: nutritionX, y: nutritionY });
+            layoutsToRender.push({ layout: nutritionLayout, fs: nutritionFontSize, x: nutritionX, y: nutritionY, padding: nutritionLayout.padding });
         }
 
         const borderThickness = this.config.border_thickness || 0.4;
