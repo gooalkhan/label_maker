@@ -3,13 +3,22 @@ package main
 import (
 	"context"
 	"os"
+	_ "embed"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+//go:embed llm_image_to_json_prompt.md
+var llmPrompt string
+
 // App struct
 type App struct {
 	ctx context.Context
+}
+
+// GetLLMPrompt returns the embedded LLM prompt text
+func (a *App) GetLLMPrompt() string {
+	return llmPrompt
 }
 
 // NewApp creates a new App application struct

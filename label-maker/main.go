@@ -20,6 +20,7 @@ func main() {
 		Title:  "label-maker",
 		Width:  1024,
 		Height: 768,
+		WindowStartState: options.Maximised,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

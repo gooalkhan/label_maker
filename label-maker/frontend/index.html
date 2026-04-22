@@ -12,6 +12,7 @@
     <header>
         <h1>Food Labeling SVG Generator</h1>
         <div class="actions">
+            <button id="show-prompt-btn" style="background-color: #1f6feb;">이미지 추출용 AI프롬프트</button>
             <button id="load-horizontal-btn">가로형 샘플</button>
             <button id="load-vertical-btn">세로형 샘플</button>
             <button id="save-json-btn">JSON 저장</button>
@@ -52,39 +53,51 @@
                 </div>
             </div>
 
-            <div class="table-editor-panel">
-                <div class="panel-header">
-                    <h2>한글표시사항 (Main Table)</h2>
-                    <div class="table-dims">
-                        <label>너비:</label>
-                        <input type="number" id="main-width-input" placeholder="W" title="Width (mm)" class="dim-input"> 
-                        <label>높이:</label>
-                        <input type="number" id="main-height-input" placeholder="H" title="Height (mm)" class="dim-input">
+            <div class="table-editor-panel accordion-panel active" id="panel-main">
+                <div class="panel-header accordion-header">
+                    <div class="header-title-group">
+                        <span class="accordion-icon">▼</span>
+                        <h2>한글표시사항 (Main Table)</h2>
                     </div>
-                    <button id="add-main-cell-btn" class="add-btn">+ 추가</button>
+                    <div class="header-controls" onclick="event.stopPropagation()">
+                        <div class="table-dims">
+                            <label>너비:</label>
+                            <input type="number" id="main-width-input" placeholder="W" title="Width (mm)" class="dim-input"> 
+                            <label>높이:</label>
+                            <input type="number" id="main-height-input" placeholder="H" title="Height (mm)" class="dim-input">
+                        </div>
+                        <button id="add-main-cell-btn" class="add-btn">+ 추가</button>
+                    </div>
                 </div>
-                <div id="main-cells-list" class="sortable-list" data-table="main_table">
-                    <!-- Cells will be rendered here -->
+                <div class="accordion-body">
+                    <div id="main-cells-list" class="sortable-list" data-table="main_table">
+                        <!-- Cells will be rendered here -->
+                    </div>
                 </div>
             </div>
 
-            <div class="table-editor-panel">
-                <div class="panel-header">
-                    <h2>영양성분 (Nutrition Facts)</h2>
-                    <div class="table-dims">
-                        <label>너비:</label>
-                        <input type="number" id="nutr-width-input" placeholder="W" title="Width (mm)" class="dim-input"> 
-                        <label>높이:</label>
-                        <input type="number" id="nutr-height-input" placeholder="H" title="Height (mm)" class="dim-input">
+            <div class="table-editor-panel accordion-panel" id="panel-nutr">
+                <div class="panel-header accordion-header">
+                    <div class="header-title-group">
+                        <span class="accordion-icon">▶</span>
+                        <h2>영양성분 (Nutrition Facts)</h2>
                     </div>
-                    <button id="add-nutr-cell-btn" class="add-btn">+ 추가</button>
+                    <div class="header-controls" onclick="event.stopPropagation()">
+                        <div class="table-dims">
+                            <label>너비:</label>
+                            <input type="number" id="nutr-width-input" placeholder="W" title="Width (mm)" class="dim-input"> 
+                            <label>높이:</label>
+                            <input type="number" id="nutr-height-input" placeholder="H" title="Height (mm)" class="dim-input">
+                        </div>
+                        <button id="add-nutr-cell-btn" class="add-btn">+ 추가</button>
+                    </div>
                 </div>
-                <div id="nutrition-cells-list" class="sortable-list" data-table="nutrition_facts">
-                    <!-- Cells will be rendered here -->
+                <div class="accordion-body" style="display: none;">
+                    <div id="nutrition-cells-list" class="sortable-list" data-table="nutrition_facts">
+                        <!-- Cells will be rendered here -->
+                    </div>
                 </div>
             </div>
-            
-            <div id="validation-msg"></div>
         </section>
         <section id="preview-pane">
             <div id="overflow-warning" class="warning-bar">
@@ -106,8 +119,22 @@
                 한글표시사항: <span id="main-font-size-val">-</span>pt / 
                 영양성분: <span id="nutr-font-size-val">-</span>pt
             </div>
+            <div id="validation-msg"></div>
         </section>
     </main>
+
+    <!-- Prompt Modal -->
+    <div id="prompt-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-modal-btn">&times;</span>
+            <h2 style="color: #58a6ff; margin-bottom: 10px; margin-top: 0;">이미지 추출용 AI프롬프트</h2>
+            <p style="font-size: 0.85rem; color: #8b949e; margin-bottom: 15px;">아래 텍스트를 복사하여 ChatGPT나 Claude 등에 이미지와 함께 전달하세요.</p>
+            <textarea id="prompt-textarea" readonly style="width:100%; height:400px; background-color:#010409; color:#c9d1d9; border:1px solid #30363d; padding:10px; border-radius:6px; font-family:monospace; font-size:0.85rem; resize:none;"></textarea>
+            <div style="text-align: right; margin-top: 15px;">
+                <button id="copy-prompt-btn" class="primary-btn" style="background-color: #238636;">복사하기</button>
+            </div>
+        </div>
+    </div>
 </div>
 <script src="./src/main.js" type="module"></script>
 </body>

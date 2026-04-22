@@ -1,0 +1,56 @@
+name: Build Wails App
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          - os: windows-latest
+            platform: windows/amd64
+            artifact_name: label-maker-windows
+            build_dir: label-maker/build/bin
+          - os: macos-latest
+            platform: darwin/universal
+            artifact_name: label-maker-macos
+            build_dir: label-maker/build/bin
+
+    runs-on: ${{ matrix.build.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install npm
+
+      - name: Build Wails App
+        working-directory: ./label-maker
+        run: wails build -platform ${{ matrix.build.platform }} -clean
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.build.artifact_name }}
+          path: ${{ matrix.build.build_dir }}/*

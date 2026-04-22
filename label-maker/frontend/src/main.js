@@ -457,6 +457,25 @@ function getDragAfterElement(container, y) {
 
 // --- Global Listeners ---
 function bindGlobalListeners() {
+    // Accordion Logic
+    const panels = document.querySelectorAll('.accordion-panel');
+    panels.forEach(panel => {
+        const header = panel.querySelector('.accordion-header');
+        header.addEventListener('click', () => {
+            if (panel.classList.contains('active')) return;
+            
+            panels.forEach(p => {
+                p.classList.remove('active');
+                p.querySelector('.accordion-body').style.display = 'none';
+                p.querySelector('.accordion-icon').innerText = '▶';
+            });
+            
+            panel.classList.add('active');
+            panel.querySelector('.accordion-body').style.display = 'flex';
+            panel.querySelector('.accordion-icon').innerText = '▼';
+        });
+    });
+
     nutritionModeSelect.onchange = (e) => { appState.label_config.nutrition_mode = e.target.value; updatePreview(); };
     globalPaddingInput.oninput = (e) => { appState.label_config.global_padding = parseFloat(e.target.value) || 0; updatePreview(); };
     cellPaddingInput.oninput = (e) => { appState.label_config.cell_padding = parseFloat(e.target.value) || 0; updatePreview(); };
@@ -545,6 +564,47 @@ function bindGlobalListeners() {
             reader.readAsText(file);
         };
         input.click();
+    };
+
+    // Prompt Modal Logic
+    const promptModal = document.getElementById('prompt-modal');
+    const promptTextarea = document.getElementById('prompt-textarea');
+    const copyPromptBtn = document.getElementById('copy-prompt-btn');
+
+    document.getElementById('show-prompt-btn').onclick = async () => {
+        try {
+            if (window.go && window.go.main && window.go.main.App) {
+                const promptText = await window.go.main.App.GetLLMPrompt();
+                promptTextarea.value = promptText;
+            } else {
+                promptTextarea.value = "Failed to load prompt. Backend not available.";
+            }
+        } catch (e) {
+            promptTextarea.value = "Error loading prompt: " + e;
+        }
+        promptModal.style.display = 'flex';
+        copyPromptBtn.innerText = '복사하기';
+    };
+
+    document.querySelector('.close-modal-btn').onclick = () => {
+        promptModal.style.display = 'none';
+    };
+
+    window.onclick = (event) => {
+        if (event.target === promptModal) {
+            promptModal.style.display = 'none';
+        }
+    };
+
+    copyPromptBtn.onclick = () => {
+        promptTextarea.select();
+        promptTextarea.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(promptTextarea.value).then(() => {
+            copyPromptBtn.innerText = '복사 완료!';
+            setTimeout(() => {
+                copyPromptBtn.innerText = '복사하기';
+            }, 2000);
+        });
     };
 
     window.addEventListener('resize', autoFitZoom);
