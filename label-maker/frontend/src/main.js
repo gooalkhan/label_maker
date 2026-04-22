@@ -521,7 +521,22 @@ function bindGlobalListeners() {
     document.getElementById('save-btn').onclick = () => {
         const svgElement = svgContainer.querySelector('svg');
         if (!svgElement) return;
-        SaveSVG(svgElement.outerHTML, 'label.svg').then(() => console.log('Saved')).catch(console.error);
+        
+        if (window.go && window.go.main && window.go.main.App) {
+            SaveSVG(svgElement.outerHTML, 'label.svg').then(() => console.log('Saved')).catch(console.error);
+        } else {
+            // Web fallback for GitHub Pages
+            const blob = new Blob([svgElement.outerHTML], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'label.svg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            console.log('Saved via browser download');
+        }
     };
 
     document.getElementById('load-horizontal-btn').onclick = () => {
