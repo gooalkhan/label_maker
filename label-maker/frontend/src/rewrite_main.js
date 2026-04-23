@@ -150,13 +150,18 @@ function createCellElement(cell, index, tableName) {
         const dimRow = document.createElement('div');
         dimRow.className = 'cell-row';
         dimRow.innerHTML = \`
-            <input type="number" class="cell-input placeholder-w" value="\${cell.width || 20}" placeholder="W (mm)" title="Width (mm)">
-            <input type="number" class="cell-input placeholder-h" value="\${cell.height || 20}" placeholder="H (mm)" title="Height (mm)">
-            <input type="text" class="cell-input placeholder-lbl" value="\${cell.label || ''}" placeholder="Label Text">
+            <input type="number" class="cell-input placeholder-w" value="\${cell.width || 20}" placeholder="W (mm)" title="Width (mm)" style="width: 60px;">
+            <input type="number" class="cell-input placeholder-h" value="\${cell.height || 20}" placeholder="H (mm)" title="Height (mm)" style="width: 60px;">
+            <select class="cell-input placeholder-pos" style="width: 70px;" title="Position">
+                <option value="right" \${(!cell.position || cell.position === 'right') ? 'selected' : ''}>우측</option>
+                <option value="left" \${(cell.position === 'left') ? 'selected' : ''}>좌측</option>
+            </select>
+            <input type="text" class="cell-input placeholder-lbl" value="\${cell.label || ''}" placeholder="Label Text" style="flex: 1;">
         \`;
         
         dimRow.querySelector('.placeholder-w').oninput = (e) => { cell.width = parseFloat(e.target.value) || 0; updatePreview(); };
         dimRow.querySelector('.placeholder-h').oninput = (e) => { cell.height = parseFloat(e.target.value) || 0; updatePreview(); };
+        dimRow.querySelector('.placeholder-pos').onchange = (e) => { cell.position = e.target.value; updatePreview(); };
         dimRow.querySelector('.placeholder-lbl').oninput = (e) => { cell.label = e.target.value; updatePreview(); };
         
         content.appendChild(dimRow);

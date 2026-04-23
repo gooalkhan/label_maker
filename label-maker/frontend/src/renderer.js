@@ -84,6 +84,16 @@ class LayoutEngine {
         this.measurer = measurer;
     }
 
+    _createFullBlock(y, w, padding) {
+        return { type: 'full', x: padding, y: y, w: w - padding * 2, maxH: Infinity, h: 0, lines: [] };
+    }
+
+    _createSplitBlock(y, w, padding, pW, pH, pLabel, position) {
+        const type = position === 'left' ? 'split-left' : 'split-right';
+        const x = position === 'left' ? padding + pW : padding;
+        return { type: type, x: x, y: y, w: w - padding * 2 - pW, maxH: pH, h: 0, lines: [], pW, pLabel };
+    }
+
     /**
      * Calculates the layout for a given set of cells.
      */
@@ -92,61 +102,66 @@ class LayoutEngine {
         const cellPadding = this.config.cell_padding || 0;
         const totalWidth = w;
         
-        // Define State
-        let currentX = padding;
         let currentY = padding;
-        let lineHeight = 0;
-        const layoutCells = [];
-        const placedPlaceholders = [];
+        let blocks = [];
+        let activeBlock = this._createFullBlock(currentY, totalWidth, padding);
+        let currentLine = { h: 0, fragments: [], w: 0 };
         let overflow = false;
 
-        const getRightLimit = (y, testHeight) => {
-            let limit = totalWidth - padding;
-            for (const p of placedPlaceholders) {
-                const lineBottom = y + testHeight;
-                const pBottom = p.y + p.height;
-                if (Math.max(y, p.y) < Math.min(lineBottom, pBottom)) {
-                    limit = Math.min(limit, p.x);
+        const isSplitBlock = (block) => block.type === 'split-left' || block.type === 'split-right';
+
+        const pushLineToBlock = () => {
+            if (currentLine.fragments.length === 0) return;
+
+            if (isSplitBlock(activeBlock) && activeBlock.h >= activeBlock.maxH) {
+                activeBlock.actualH = Math.max(activeBlock.maxH, activeBlock.h);
+                blocks.push(activeBlock);
+                currentY = activeBlock.y + activeBlock.actualH;
+                activeBlock = this._createFullBlock(currentY, totalWidth, padding);
+            }
+
+            const lineY = activeBlock.y + activeBlock.h;
+            for(let f of currentLine.fragments) {
+                f.y = lineY;
+            }
+
+            activeBlock.lines.push(currentLine);
+            activeBlock.h += currentLine.h;
+            
+            if (activeBlock.y + activeBlock.h > h - padding) {
+                overflow = true;
+            }
+
+            currentLine = { h: 0, fragments: [], w: 0 };
+        };
+
+        const pushActiveBlock = () => {
+            if (currentLine.fragments.length > 0) pushLineToBlock();
+            if (activeBlock.lines.length > 0 || isSplitBlock(activeBlock)) {
+                if (isSplitBlock(activeBlock)) {
+                    activeBlock.actualH = Math.max(activeBlock.maxH, activeBlock.h);
+                } else {
+                    activeBlock.actualH = activeBlock.h;
                 }
+                blocks.push(activeBlock);
+                currentY = activeBlock.y + activeBlock.actualH;
             }
-            return limit;
-        };
-
-        const fillLastLine = () => {
-            const currentLineCells = layoutCells.filter(c => Math.abs(c.y - currentY) < 0.001);
-            if (currentLineCells.length === 0) return;
-            const limit = getRightLimit(currentY, lineHeight || currentLineCells[0].height);
-            const uniqueXStarts = [...new Set(currentLineCells.map(c => c.x))].sort((a, b) => a - b);
-            for (let i = 0; i < uniqueXStarts.length; i++) {
-                const x = uniqueXStarts[i];
-                const nextX = (i < uniqueXStarts.length - 1) ? uniqueXStarts[i + 1] : limit;
-                const newW = nextX - x;
-                currentLineCells.filter(c => c.x === x).forEach(c => { c.width = newW; });
-            }
-        };
-
-        const wrap = () => {
-            fillLastLine();
-            currentY += (lineHeight > 0 ? lineHeight : 0);
-            currentX = padding;
-            lineHeight = 0;
         };
 
         let cellIdx = 0;
         for (const cell of cells) {
-            // Handle Placeholders
             if (cell.type === 'placeholder') {
+                pushActiveBlock();
                 const pWidth = cell.width || CONSTANTS.DEFAULT_PLACEHOLDER_SIZE;
                 const pHeight = cell.height || CONSTANTS.DEFAULT_PLACEHOLDER_SIZE;
-                const pX = totalWidth - padding - pWidth;
-                placedPlaceholders.push({ x: pX, y: currentY, width: pWidth, height: pHeight, label: cell.label });
+                const pPosition = cell.position || cell.align || 'right'; // Default to right
+                activeBlock = this._createSplitBlock(currentY, totalWidth, padding, pWidth, pHeight, cell.label, pPosition);
                 cellIdx++;
                 continue;
             }
 
-            // Standard Wrapping Logic
-            if ((cell.use_whole_line || !cell.header) && currentX > padding) {
-                wrap();
+            if ((cell.use_whole_line || !cell.header) && currentLine.fragments.length > 0) {
+                pushLineToBlock();
             }
 
             const fullText = (cell.header && cell.content) ? `${cell.header} ${cell.content}` : (cell.header || cell.content || '');
@@ -154,7 +169,6 @@ class LayoutEngine {
             const drawPaddingLeft = cell.indent ? (cell.indent + cellPadding) : cellPadding;
 
             if (cell.no_break) {
-                // Determine block size
                 const cellFragments = [];
                 let totalCellW = 0;
                 let maxTextHeight = 0;
@@ -169,16 +183,13 @@ class LayoutEngine {
                 }
                 
                 const cellH = maxTextHeight + (cellPadding * 2);
-                let limit = getRightLimit(currentY, cellH);
                 
-                if (currentX + totalCellW > limit && currentX > padding) {
-                    wrap();
-                    limit = getRightLimit(currentY, cellH);
+                if (currentLine.w + totalCellW > activeBlock.w && currentLine.fragments.length > 0) {
+                    pushLineToBlock();
                 }
 
-                // Auto-compress text to fit line if it's too long
                 let appliedScale = this.config.horizontal_scale || 1.0;
-                const availableW = limit - currentX;
+                const availableW = activeBlock.w - currentLine.w;
                 if (totalCellW > availableW) {
                     const globalScale = this.config.horizontal_scale || 1.0;
                     const fitRatio = availableW / totalCellW;
@@ -188,21 +199,26 @@ class LayoutEngine {
                     for (const cf of cellFragments) { cf.width *= adjustRatio; cf.textW *= adjustRatio; }
                 }
 
-                // Place Fragments
-                let drawX = currentX;
+                let drawXOffset = currentLine.w;
                 for (const cf of cellFragments) {
-                    layoutCells.push({
-                        x: currentX, fragX: drawX, textX: drawX + drawPaddingLeft, y: currentY,
-                        width: totalCellW, fragWidth: cf.width, textWidth: cf.textW, height: cellH, textHeight: cf.height,
-                        text: cf.text, invert: cf.invert, fs: cf.fs, isGroup: true, padding: cellPadding, paddingLeft: drawPaddingLeft,
+                    currentLine.fragments.push({
+                        offsetX: currentLine.w, 
+                        fragOffsetX: drawXOffset,
+                        width: totalCellW, 
+                        fragWidth: cf.width, 
+                        textWidth: cf.textW, 
+                        height: cellH, 
+                        textHeight: cf.height,
+                        text: cf.text, invert: cf.invert, fs: cf.fs, isGroup: true, 
+                        padding: cellPadding, paddingLeft: drawPaddingLeft,
                         scale: appliedScale, cellIdx: cellIdx, align: cell.align || 'left'
                     });
-                    drawX += cf.width;
+                    drawXOffset += cf.width;
                 }
-                currentX += totalCellW;
-                lineHeight = Math.max(lineHeight, cellH);
+                currentLine.w += totalCellW;
+                currentLine.h = Math.max(currentLine.h, cellH);
+
             } else {
-                // Word-based line breaking
                 let allWords = [];
                 for (const frag of fragments) {
                     const fragFontSize = frag.enforceMinSize ? Math.max(fontSize, 12) : fontSize;
@@ -216,6 +232,7 @@ class LayoutEngine {
                     let count = 0, lastFitW = 0, lastFitH = 0;
                     let currentFragInvert = allWords[0].invert;
                     let currentFragFs = allWords[0].fs;
+
                     for (let j = 1; j <= allWords.length; j++) {
                         if (allWords[j - 1].invert !== currentFragInvert || allWords[j - 1].fs !== currentFragFs) break;
                         
@@ -223,49 +240,115 @@ class LayoutEngine {
                         const size = this.measurer.measure(subText, currentFragFs, this.config.horizontal_scale);
                         const testW = size.width + (cellPadding * 2);
                         const testH = size.height + (cellPadding * 2);
-                        const limit = getRightLimit(currentY, testH);
                         
-                        if (currentX + testW > limit) {
-                            if (currentX > padding || j > 1) break;
+                        if (currentLine.w + testW > activeBlock.w) {
+                            if (currentLine.w > 0 || j > 1) break;
                             count = 1; lastFitW = testW; lastFitH = testH; break;
                         }
                         count = j; lastFitW = testW; lastFitH = testH;
                     }
+
                     if (count === 0) {
-                        wrap();
-                        const mmLimit = h - padding;
-                        // Avoid infinite loops
-                        if (currentY + (fontSize * CONSTANTS.PT_TO_MM) > mmLimit) { overflow = true; break; }
+                        pushLineToBlock();
+                        if (overflow) break;
                         continue;
                     }
+
                     const fitText = allWords.slice(0, count).map(w => w.text).join('');
                     const textWidth = lastFitW - (cellPadding * 2);
-                    layoutCells.push({
-                        x: currentX, y: currentY, width: lastFitW, height: lastFitH,
+
+                    currentLine.fragments.push({
+                        offsetX: currentLine.w, width: lastFitW, height: lastFitH,
                         textHeight: lastFitH - (cellPadding * 2), textWidth: textWidth,
-                        text: fitText, invert: currentFragInvert, fs: currentFragFs, padding: cellPadding, paddingLeft: drawPaddingLeft,
-                        scale: this.config.horizontal_scale || 1.0, cellIdx: cellIdx, align: cell.align || 'left'
+                        text: fitText, invert: currentFragInvert, fs: currentFragFs, 
+                        padding: cellPadding, paddingLeft: drawPaddingLeft,
+                        scale: this.config.horizontal_scale || 1.0, cellIdx: cellIdx, 
+                        align: cell.align || 'left', isGroup: false
                     });
-                    currentX += lastFitW;
-                    lineHeight = Math.max(lineHeight, lastFitH);
+                    
+                    currentLine.w += lastFitW;
+                    currentLine.h = Math.max(currentLine.h, lastFitH);
                     allWords = allWords.slice(count);
                     
-                    if (currentY + lineHeight > h - padding) { overflow = true; break; }
+                    if (overflow) break;
                 }
             }
             if (overflow) break;
-            if (cell.use_whole_line) wrap();
+            if (cell.use_whole_line) pushLineToBlock();
             cellIdx++;
         }
-        wrap(); // Final wrap to fill last line
         
-        // Group logically for border rendering (Group by cellIdx and Row Y)
-        const logicalGroups = this._buildLogicalGroups(layoutCells);
+        pushActiveBlock();
+
+        const layoutCells = [];
+        const placeholders = [];
+        
+        for (const block of blocks) {
+            if (isSplitBlock(block)) {
+                const pX = block.type === 'split-left' ? padding : totalWidth - padding - block.pW;
+                
+                const pParsed = Parser.parse(block.pLabel || '');
+                const pInvert = pParsed.some(f => f.invert);
+                const pText = pParsed.map(f => f.text).join('');
+                
+                let pFsPt = 10; // Base font size for measurement
+                const size = this.measurer.measure(pText, pFsPt, 1.0);
+                
+                const availableW = block.pW - 2; // 1mm padding each side
+                const availableH = block.actualH - 2; // 1mm padding top/bottom
+                
+                if (size.width > 0 && availableW > 0) {
+                    // Scale font size to fit width
+                    const scaleW = availableW / size.width;
+                    const scaleH = availableH > 0 ? availableH / size.height : scaleW;
+                    
+                    // Use the smaller scale to ensure it fits both width and height
+                    const finalScale = Math.min(scaleW, scaleH);
+                    pFsPt = pFsPt * finalScale;
+                }
+
+                placeholders.push({
+                    x: pX,
+                    y: block.y,
+                    width: block.pW,
+                    height: block.actualH,
+                    label: pText,
+                    invert: pInvert,
+                    textWidth: availableW, // Use availableW for textLength to perfectly flush it
+                    fs: pFsPt
+                });
+            }
+            
+            for (const line of block.lines) {
+                let uniqueOffsets = [];
+                for(let f of line.fragments) {
+                    if (!uniqueOffsets.includes(f.offsetX)) uniqueOffsets.push(f.offsetX);
+                }
+                uniqueOffsets.sort((a,b) => a - b);
+                
+                for(let f of line.fragments) {
+                    let idx = uniqueOffsets.indexOf(f.offsetX);
+                    let nextOffset = (idx < uniqueOffsets.length - 1) ? uniqueOffsets[idx+1] : block.w;
+                    f.width = nextOffset - f.offsetX;
+                    
+                    f.x = block.x + f.offsetX;
+                    if (f.isGroup) {
+                        f.fragX = block.x + f.fragOffsetX;
+                        f.textX = f.fragX + f.paddingLeft;
+                    } else {
+                        f.textX = f.x + f.paddingLeft;
+                    }
+                }
+                layoutCells.push(...line.fragments);
+            }
+        }
+
+        const logicalGroups = this._buildLogicalGroups(blocks);
 
         return { 
             cells: layoutCells, 
             logicalGroups: logicalGroups,
-            placeholders: placedPlaceholders, 
+            placeholders: placeholders, 
             overflow: overflow, 
             w: w, 
             padding: padding,
@@ -276,46 +359,37 @@ class LayoutEngine {
     /**
      * Groups fragmented cells back into their logical cell representation for drawing borders and backgrounds.
      */
-    _buildLogicalGroups(layoutCells) {
+    _buildLogicalGroups(blocks) {
         const groups = [];
-        // Group by Y position first (lines)
-        const lines = {};
-        for (const c of layoutCells) {
-            const yKey = c.y.toFixed(4);
-            if (!lines[yKey]) lines[yKey] = { cells: [], maxH: 0 };
-            lines[yKey].cells.push(c);
-            lines[yKey].maxH = Math.max(lines[yKey].maxH, c.height);
-        }
-
-        for (const yKey in lines) {
-            const line = lines[yKey];
-            const cellsByIdx = {};
-            
-            for (const c of line.cells) {
-                if (!cellsByIdx[c.cellIdx]) {
-                    cellsByIdx[c.cellIdx] = {
-                        cells: [],
-                        minX: Infinity, maxX: -Infinity,
-                        contentMinX: Infinity, contentMaxX: -Infinity,
-                        x: c.x, y: c.y, align: c.align, maxH: line.maxH
-                    };
+        
+        for (const block of blocks) {
+            for (const line of block.lines) {
+                const cellsByIdx = {};
+                for (const c of line.fragments) {
+                    if (!cellsByIdx[c.cellIdx]) {
+                        cellsByIdx[c.cellIdx] = {
+                            cells: [],
+                            minX: Infinity, maxX: -Infinity,
+                            contentMinX: Infinity, contentMaxX: -Infinity,
+                            x: c.x, y: c.y, align: c.align, maxH: line.h
+                        };
+                    }
+                    const g = cellsByIdx[c.cellIdx];
+                    g.cells.push(c);
+                    
+                    const fx = c.isGroup ? c.fragX : c.x;
+                    const fw = c.isGroup ? c.fragWidth : c.width;
+                    const sx = c.x;
+                    const sw = c.width;
+                    
+                    g.contentMinX = Math.min(g.contentMinX, fx);
+                    g.contentMaxX = Math.max(g.contentMaxX, fx + fw);
+                    g.minX = Math.min(g.minX, sx);
+                    g.maxX = Math.max(g.maxX, sx + sw);
                 }
-                const g = cellsByIdx[c.cellIdx];
-                g.cells.push(c);
-                
-                const fx = c.isGroup ? c.fragX : c.x;
-                const fw = c.isGroup ? c.fragWidth : c.width;
-                const sx = c.x;
-                const sw = c.width;
-                
-                g.contentMinX = Math.min(g.contentMinX, fx);
-                g.contentMaxX = Math.max(g.contentMaxX, fx + fw);
-                g.minX = Math.min(g.minX, sx);
-                g.maxX = Math.max(g.maxX, sx + sw);
-            }
-            
-            for(let key in cellsByIdx) {
-                groups.push(cellsByIdx[key]);
+                for(let key in cellsByIdx) {
+                    groups.push(cellsByIdx[key]);
+                }
             }
         }
         return groups;
@@ -363,18 +437,19 @@ class SVGBuilder {
                 const drawPadding = c.padding || 0;
                 const drawPaddingLeft = c.paddingLeft || drawPadding;
                 
+                const topTouch = layout.cells.some(other => other.cellIdx === c.cellIdx && Math.abs(other.y + other.height - c.y) < 0.001 && Math.max(other.x, c.x) < Math.min(other.x + other.width, c.x + c.width));
+                const bottomTouch = layout.cells.some(other => other.cellIdx === c.cellIdx && Math.abs(c.y + g.maxH - other.y) < 0.001 && Math.max(other.x, c.x) < Math.min(other.x + other.width, c.x + c.width));
+                
                 // 1. Render Inversion Background
                 if (c.invert) {
                     const isOnlyFrag = (g.cells.length === 1);
                     const fillX = isOnlyFrag ? g.x : ((c.isGroup ? c.fragX : c.x) + shiftX);
                     const fillW = isOnlyFrag ? effectiveW : (c.isGroup ? c.fragWidth : c.width);
-                    group += `<rect x="${fillX}" y="${c.y}" width="${fillW}" height="${g.maxH}" fill="black"/>`;
+                    const fillH = bottomTouch ? g.maxH + 0.5 : g.maxH; // Overlap to prevent anti-aliasing gaps
+                    group += `<rect x="${fillX}" y="${c.y}" width="${fillW}" height="${fillH}" fill="black"/>`;
                 }
 
                 // 2. Render Outer Borders
-                const topTouch = layout.cells.some(other => other.cellIdx === c.cellIdx && Math.abs(other.y + other.height - c.y) < 0.001 && Math.max(other.x, c.x) < Math.min(other.x + other.width, c.x + c.width));
-                const bottomTouch = layout.cells.some(other => other.cellIdx === c.cellIdx && Math.abs(c.y + g.maxH - other.y) < 0.001 && Math.max(other.x, c.x) < Math.min(other.x + other.width, c.x + c.width));
-                
                 const x1 = g.x;
                 const x2 = g.x + effectiveW;
                 
@@ -403,10 +478,18 @@ class SVGBuilder {
 
         // Draw Placeholders
         for (const p of layout.placeholders) {
+            if (p.invert) {
+                group += `<rect x="${p.x}" y="${p.y}" width="${p.width}" height="${p.height}" fill="black" stroke="black" stroke-width="${borderThickness}"/>`;
+            } else {
+                group += `<rect x="${p.x}" y="${p.y}" width="${p.width}" height="${p.height}" fill="none" stroke="black" stroke-width="${borderThickness}"/>`;
+            }
+            
             if (p.label) {
-                const labelFs = 2; // Hardcoded small size
                 const centerY = p.y + (p.height / 2);
-                group += `<text x="${p.x + 2}" y="${centerY}" font-family="${CONSTANTS.FONT_FAMILY}" font-size="${labelFs}" fill="#888" dominant-baseline="central" xml:space="preserve">${p.label}</text>`;
+                const textColor = p.invert ? 'white' : '#888';
+                const textLengthAttr = p.textWidth ? ` textLength="${p.textWidth}" lengthAdjust="spacingAndGlyphs"` : "";
+                
+                group += `<text x="${p.x + 1}" y="${centerY}" font-family="${CONSTANTS.FONT_FAMILY}" font-size="${(p.fs || 6) * CONSTANTS.PT_TO_MM}" fill="${textColor}" dominant-baseline="central"${textLengthAttr} xml:space="preserve">${p.label}</text>`;
             }
         }
         
@@ -493,10 +576,15 @@ export class Renderer {
         }
 
         // Build SVG
-        const layoutsToRender = [
-            { layout: mainLayout, fs: mainFontSize, x: mainX, y: mainY, padding: mainLayout.padding }
-        ];
-        if (nutritionLayout) {
+        const layoutsToRender = [];
+        
+        if (nutritionLayout && mode === 'none') {
+            layoutsToRender.push({ layout: nutritionLayout, fs: nutritionFontSize, x: nutritionX, y: nutritionY, padding: nutritionLayout.padding });
+        }
+        
+        layoutsToRender.push({ layout: mainLayout, fs: mainFontSize, x: mainX, y: mainY, padding: mainLayout.padding });
+        
+        if (nutritionLayout && mode !== 'none') {
             layoutsToRender.push({ layout: nutritionLayout, fs: nutritionFontSize, x: nutritionX, y: nutritionY, padding: nutritionLayout.padding });
         }
 
