@@ -84,27 +84,31 @@ class LayoutEngine {
         this.measurer = measurer;
     }
 
-    _createFullBlock(y, w, padding) {
-        return { type: 'full', x: padding, y: y, w: w - padding * 2, maxH: Infinity, h: 0, lines: [] };
+    _createFullBlock(y, w, pL, pR) {
+        return { type: 'full', x: pL, y: y, w: w - pL - pR, maxH: Infinity, h: 0, lines: [] };
     }
 
-    _createSplitBlock(y, w, padding, pW, pH, pLabel, position) {
+    _createSplitBlock(y, w, pL, pR, pW, pH, pLabel, position) {
         const type = position === 'left' ? 'split-left' : 'split-right';
-        const x = position === 'left' ? padding + pW : padding;
-        return { type: type, x: x, y: y, w: w - padding * 2 - pW, maxH: pH, h: 0, lines: [], pW, pLabel };
+        const x = position === 'left' ? pL + pW : pL;
+        return { type: type, x: x, y: y, w: w - pL - pR - pW, maxH: pH, h: 0, lines: [], pW, pLabel };
     }
 
     /**
      * Calculates the layout for a given set of cells.
      */
-    calculate(cells, w, h, fontSize) {
-        const padding = this.config.global_padding || 2;
+    calculate(cells, w, h, fontSize, padT, padB, padL, padR) {
+        if (padT === undefined) padT = this.config.global_padding || 2;
+        if (padB === undefined) padB = this.config.global_padding || 2;
+        if (padL === undefined) padL = this.config.global_padding || 2;
+        if (padR === undefined) padR = this.config.global_padding || 2;
+        
         const cellPadding = this.config.cell_padding || 0;
         const totalWidth = w;
         
-        let currentY = padding;
+        let currentY = padT;
         let blocks = [];
-        let activeBlock = this._createFullBlock(currentY, totalWidth, padding);
+        let activeBlock = this._createFullBlock(currentY, totalWidth, padL, padR);
         let currentLine = { h: 0, fragments: [], w: 0 };
         let overflow = false;
 
@@ -117,7 +121,7 @@ class LayoutEngine {
                 activeBlock.actualH = Math.max(activeBlock.maxH, activeBlock.h);
                 blocks.push(activeBlock);
                 currentY = activeBlock.y + activeBlock.actualH;
-                activeBlock = this._createFullBlock(currentY, totalWidth, padding);
+                activeBlock = this._createFullBlock(currentY, totalWidth, padL, padR);
             }
 
             const lineY = activeBlock.y + activeBlock.h;
@@ -128,7 +132,7 @@ class LayoutEngine {
             activeBlock.lines.push(currentLine);
             activeBlock.h += currentLine.h;
             
-            if (activeBlock.y + activeBlock.h > h - padding) {
+            if (activeBlock.y + activeBlock.h > h - padB) {
                 overflow = true;
             }
 
@@ -155,7 +159,7 @@ class LayoutEngine {
                 const pWidth = cell.width || CONSTANTS.DEFAULT_PLACEHOLDER_SIZE;
                 const pHeight = cell.height || CONSTANTS.DEFAULT_PLACEHOLDER_SIZE;
                 const pPosition = cell.position || cell.align || 'right'; // Default to right
-                activeBlock = this._createSplitBlock(currentY, totalWidth, padding, pWidth, pHeight, cell.label, pPosition);
+                activeBlock = this._createSplitBlock(currentY, totalWidth, padL, padR, pWidth, pHeight, cell.label, pPosition);
                 cellIdx++;
                 continue;
             }
@@ -285,7 +289,7 @@ class LayoutEngine {
         
         for (const block of blocks) {
             if (isSplitBlock(block)) {
-                const pX = block.type === 'split-left' ? padding : totalWidth - padding - block.pW;
+                const pX = block.type === 'split-left' ? padL : totalWidth - padR - block.pW;
                 
                 const pParsed = Parser.parse(block.pLabel || '');
                 const pInvert = pParsed.some(f => f.invert);
@@ -351,8 +355,8 @@ class LayoutEngine {
             placeholders: placeholders, 
             overflow: overflow, 
             w: w, 
-            padding: padding,
-            usedHeight: currentY + padding 
+            padding: { t: padT, b: padB, l: padL, r: padR },
+            usedHeight: currentY + padB 
         };
     }
 
@@ -403,6 +407,9 @@ class SVGBuilder {
     static build(layouts, borderThickness, totalW, totalH) {
         let svg = `<svg width="${totalW}mm" height="${totalH}mm" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="background: white;">`;
 
+        // Draw the global background and outer border for the entire SVG
+        svg += `<rect x="0" y="0" width="${totalW}" height="${totalH}" fill="white" stroke="black" stroke-width="${borderThickness}"/>`;
+
         for(const config of layouts) {
             if (!config.layout) continue;
             svg += this._renderTable(config.layout, config.fs, config.x, config.y, borderThickness);
@@ -413,16 +420,11 @@ class SVGBuilder {
     }
 
     static _renderTable(layout, fs, tX, tY, borderThickness) {
-        const padding = layout.padding || 0;
+        const p = layout.padding || { t: 0, b: 0, l: 0, r: 0 };
         let group = `<g transform="translate(${tX}, ${tY})">`;
         
-        // 1. Draw the outermost background and border (no padding)
-        group += `<rect x="0" y="0" width="${layout.w}" height="${layout.usedHeight}" fill="white" stroke="black" stroke-width="${borderThickness}"/>`;
-
-        // 2. Draw the inner background and border (with padding) if padding exists
-        if (padding > 0) {
-            group += `<rect x="${padding}" y="${padding}" width="${layout.w - 2 * padding}" height="${layout.usedHeight - 2 * padding}" fill="white" stroke="black" stroke-width="${borderThickness}"/>`;
-        }
+        // Draw the inner background and border
+        group += `<rect x="${p.l}" y="${p.t}" width="${layout.w - p.l - p.r}" height="${layout.usedHeight - p.t - p.b}" fill="white" stroke="black" stroke-width="${borderThickness}"/>`;
 
         // Draw Cell Borders and Backgrounds
         for (const g of layout.logicalGroups) {
@@ -493,13 +495,8 @@ class SVGBuilder {
             }
         }
         
-        // Final borderline overlap for clean edges (no padding)
-        group += `<rect x="0" y="0" width="${layout.w}" height="${layout.usedHeight}" fill="none" stroke="black" stroke-width="${borderThickness}"/>`;
-        
-        // Final borderline overlap for clean edges (with padding) if padding exists
-        if (padding > 0) {
-            group += `<rect x="${padding}" y="${padding}" width="${layout.w - 2 * padding}" height="${layout.usedHeight - 2 * padding}" fill="none" stroke="black" stroke-width="${borderThickness}"/>`;
-        }
+        // Final borderline overlap for clean edges
+        group += `<rect x="${p.l}" y="${p.t}" width="${layout.w - p.l - p.r}" height="${layout.usedHeight - p.t - p.b}" fill="none" stroke="black" stroke-width="${borderThickness}"/>`;
 
         group += `</g>`;
         return group;
@@ -529,6 +526,21 @@ export class Renderer {
         let mainX = 0, mainY = 0;
 
         const layoutEngine = new LayoutEngine(this.config, this.measurer);
+        
+        const pad = this.config.global_padding || 2;
+        let mainPad = { t: pad, b: pad, l: pad, r: pad };
+        let nutrPad = { t: pad, b: pad, l: pad, r: pad };
+
+        if (mode === 'right') {
+            mainPad.r = 0;
+            nutrPad.l = 0;
+        } else if (mode === 'left') {
+            mainPad.l = 0;
+            nutrPad.r = 0;
+        } else if (mode === 'bottom') {
+            mainPad.b = 0;
+            nutrPad.t = 0;
+        }
 
         // --- PASS 1: Baseline Font Size (Forced 1.0 Scale) ---
         this.config.horizontal_scale = 1.0;
@@ -536,7 +548,7 @@ export class Renderer {
         // Inline findOptimalFontSize
         let mainFontSize = CONSTANTS.MIN_OPTIMAL_FONT_SIZE;
         for (let size = 20; size >= CONSTANTS.MIN_OPTIMAL_FONT_SIZE; size -= 0.2) {
-            if (!layoutEngine.calculate(this.mainTable.cells, mainWidth, mainHeight, size).overflow) {
+            if (!layoutEngine.calculate(this.mainTable.cells, mainWidth, mainHeight, size, mainPad.t, mainPad.b, mainPad.l, mainPad.r).overflow) {
                 mainFontSize = size;
                 break;
             }
@@ -546,7 +558,7 @@ export class Renderer {
 
         // --- PASS 2: Final Flow Calculation (User Scale) ---
         this.config.horizontal_scale = savedScale;
-        const mainLayout = layoutEngine.calculate(this.mainTable.cells, mainWidth, mainHeight, mainFontSize);
+        const mainLayout = layoutEngine.calculate(this.mainTable.cells, mainWidth, mainHeight, mainFontSize, mainPad.t, mainPad.b, mainPad.l, mainPad.r);
 
         let nutritionLayout = null;
         if (nutritionFontSize > 0) {
@@ -563,7 +575,18 @@ export class Renderer {
                 nutritionX = mainX + mainLayout.w;
             }
 
-            nutritionLayout = layoutEngine.calculate(nutritionConfig.cells, nutrW, nutrH, nutritionFontSize);
+            nutritionLayout = layoutEngine.calculate(nutritionConfig.cells, nutrW, nutrH, nutritionFontSize, nutrPad.t, nutrPad.b, nutrPad.l, nutrPad.r);
+
+            // Align outer bounding boxes
+            if (mode === 'left' || mode === 'right') {
+                const maxH = Math.max(nutritionLayout.usedHeight, mainLayout.usedHeight);
+                nutritionLayout.usedHeight = maxH;
+                mainLayout.usedHeight = maxH;
+            } else if (mode === 'bottom' || mode === 'none') {
+                const maxW = Math.max(nutritionLayout.w, mainLayout.w);
+                nutritionLayout.w = maxW;
+                mainLayout.w = maxW;
+            }
         }
 
         // Calculate Final Viewport Bounds

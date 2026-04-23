@@ -4,58 +4,214 @@ import { Renderer } from './renderer';
 import promptFallback from '../../llm_image_to_json_prompt.md?raw';
 
 const initialData = {
-    label_config: {
-        nutrition_mode: "right",
-        global_padding: 3,
-        cell_padding: 1.2,
-        border_thickness: 0.4,
-        horizontal_scale: 1.0,
-        font_family: "NanumGothic"
+    "label_config": {
+        "nutrition_mode": "right",
+        "global_padding": 3,
+        "cell_padding": 1,
+        "border_thickness": 0.4,
+        "horizontal_scale": 0.95,
+        "font_family": "NanumGothic"
     },
-    main_table: {
-        width: 140,
-        height: 120,
-        cells: [
-            { type: "info", content: "식품등의표시 · 광고에관한법률에 따른 한글표시사항", use_whole_line: true },
-            { type: "info", header: "[[제품명]]", content: "프리미엄 호밀 가공빵(호밀 80% 함유)", no_break: true },
-            { type: "info", header: "[[식품유형]]", content: "빵류", no_break: true },
-            { type: "info", header: "[[원산지]]", content: "{{덴마크}}", no_break: true },
-            { type: "info", header: "[[내용량]]", content: "500g (790Kcal)", no_break: true },
-            { type: "info", header: "[[제조원]]", content: "(주)글로벌푸드코리아", use_whole_line: true },
-            { type: "info", header: "[[수입원]]", content: "주식회사 젤러노트 / 서울특별시 중구 한강대로 416, 서울스퀘어 13층 5호, 25호", use_whole_line: true },
-            { type: "info", header: "[[원재료명]]", content: "호밀 60%, 정제수, 효모, 정제소금, 맥아추출물(고형분함량 100%), 설탕, 사탕무, 식이섬유, 옥수수전분, 밀식이섬유, 유채유, 맥아분말", use_whole_line: true },
-            { type: "placeholder", label: "비닐류 OTHER(LDPE+PP)", width: 25, height: 25 },
-            { type: "info", header: "[[포장기한]]", content: "2024.12.31", no_break: true },
-            { type: "info", header: "[[소비기한]]", content: "제품 별도 표기일까지(읽는법: 일/월/년 순)", no_break: true },
-            { type: "info", header: "[[보관방법]]", content: "직사광선을 피해 건조하고 서늘한곳에 보관", use_whole_line: true },
-            { type: "info", header: "[[반품및교환]]", content: "구입처 및 수입원(T.02-6956-7787)", use_whole_line: true },
-            { type: "info", content: "주 표시면의 이미지는 조리예 및 연출된 예입니다\n우유, 대두, 밀, 호두 함유 가능성 있음\n본 제품은 공정거래위원회의 고시 소비자분쟁해결기준에 의거 교환 또는 보상받을 수 있습니다.\n부정·불량식품 신고는 국번없이 1399", use_whole_line: true }
+    "main_table": {
+        "width": 140,
+        "height": 120,
+        "cells": [
+            {
+                "type": "info",
+                "content": "식품등의표시 · 광고에관한법률에 따른 한글표시사항",
+                "no_break": true,
+                "align": "center"
+            },
+            {
+                "type": "info",
+                "header": "[[제품명]]",
+                "content": "프리미엄 호밀 가공빵(호밀 80% 함유)",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "[[식품유형]]",
+                "content": "빵류",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "[[원산지]]",
+                "content": "{{덴마크}}",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "[[내용량]]",
+                "content": "500g (790Kcal)",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "[[제조원]]",
+                "content": "(주)글로벌푸드코리아",
+                "use_whole_line": true
+            },
+            {
+                "type": "info",
+                "header": "[[수입원]]",
+                "content": "주식회사 젤러노트 / 서울특별시 중구 한강대로 416, 서울스퀘어 13층 5호, 25호",
+                "use_whole_line": true
+            },
+            {
+                "type": "info",
+                "header": "[[원재료명]]",
+                "content": "호밀 60%, 정제수, 효모, 정제소금, 맥아추출물(고형분함량 100%), 설탕, 사탕무, 식이섬유, 옥수수전분, 밀식이섬유, 유채유, 맥아분말",
+                "use_whole_line": true
+            },
+            {
+                "type": "placeholder",
+                "label": "비닐류 OTHER(LDPE+PP)",
+                "width": 25,
+                "height": 25
+            },
+            {
+                "type": "info",
+                "header": "[[포장기한]]",
+                "content": "2024.12.31",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "[[소비기한]]",
+                "content": "제품 별도 표기일까지(읽는법: 일/월/년 순)",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "[[보관방법]]",
+                "content": "직사광선을 피해 건조하고 서늘한곳에 보관",
+                "use_whole_line": true
+            },
+            {
+                "type": "info",
+                "header": "[[반품및교환]]",
+                "content": "구입처 및 수입원(T.02-6956-7787)",
+                "use_whole_line": true
+            },
+            {
+                "type": "info",
+                "content": "주 표시면의 이미지는 조리예 및 연출된 예입니다\n우유, 대두, 밀, 호두 함유 가능성 있음\n본 제품은 공정거래위원회의 고시 소비자분쟁해결기준에 의거 교환 또는 보상받을 수 있습니다.\n부정·불량식품 신고는 국번없이 1399",
+                "use_whole_line": true
+            }
         ]
     },
-    nutrition_facts: {
-        width: 70,
-        height: 120,
-        cells: [
-            { "type": "info", "header": "[[영양정보]]", "no_break": true },
-            { "type": "info", "header": "[[총 내용량 450g / 100g당 210kcal]]", "align": "right", "no_break": true },
-            { "type": "info", "content": "[[나트륨]]", "no_break": true },
-            { "type": "info", "header": "280mg 14 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[탄수화물]]", "no_break": true },
-            { "type": "info", "header": "41g 13 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[당류]]", "no_break": true },
-            { "type": "info", "header": "6g 6 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[지방]]", "no_break": true },
-            { "type": "info", "header": "1.1g 2 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[트랜스지방]]", "no_break": true },
-            { "type": "info", "header": "0g", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[포화지방]]", "no_break": true },
-            { "type": "info", "header": "0.3g 2 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[콜레스테롤]]", "no_break": true },
-            { "type": "info", "header": "0mg 0 %", "no_break": true, "align": "right" },
-            { "type": "info", "content": "[[단백질]]", "no_break": true },
-            { "type": "info", "header": "4.4g 8 %", "no_break": true, "align": "right" },
-
-            { "type": "info", "content": "1일 영양성분 기준치에 대한 비율(%)은 2,000 kcal 기준이므로 개인의 필요 열량에 따라 다를 수 있습니다.", "use_whole_line": true }
+    "nutrition_facts": {
+        "width": 66,
+        "height": 120,
+        "cells": [
+            {
+                "type": "placeholder",
+                "width": 19,
+                "height": 10,
+                "position": "left",
+                "label": "[[영양정보]]"
+            },
+            {
+                "type": "info",
+                "header": "[[총 내용량 450g 100g당 210kcal]]",
+                "align": "right",
+                "no_break": false
+            },
+            {
+                "type": "info",
+                "content": "[[나트륨]]",
+                "no_break": true,
+                "use_whole_line": false
+            },
+            {
+                "type": "info",
+                "header": "280mg 14 %",
+                "no_break": true,
+                "align": "right"
+            },
+            {
+                "type": "info",
+                "content": "[[탄수화물]]",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "41g 13 %",
+                "no_break": true,
+                "align": "right"
+            },
+            {
+                "type": "info",
+                "content": "[[당류]]",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "6g 6 %",
+                "no_break": true,
+                "align": "right"
+            },
+            {
+                "type": "info",
+                "content": "[[지방]]",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "1.1g 2 %",
+                "no_break": true,
+                "align": "right"
+            },
+            {
+                "type": "info",
+                "content": "[[트랜스지방]]",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "0g",
+                "no_break": true,
+                "align": "right"
+            },
+            {
+                "type": "info",
+                "content": "[[포화지방]]",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "0.3g 2 %",
+                "no_break": true,
+                "align": "right"
+            },
+            {
+                "type": "info",
+                "content": "[[콜레스테롤]]",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "0mg 0 %",
+                "no_break": true,
+                "align": "right"
+            },
+            {
+                "type": "info",
+                "content": "[[단백질]]",
+                "no_break": true
+            },
+            {
+                "type": "info",
+                "header": "4.4g 8 %",
+                "no_break": true,
+                "align": "right"
+            },
+            {
+                "type": "info",
+                "content": "1일 영양성분 기준치에 대한 비율(%)은 2,000 kcal 기준이므로 개인의 필요 열량에 따라 다를 수 있습니다.",
+                "use_whole_line": true
+            }
         ]
     }
 };
@@ -73,7 +229,7 @@ const verticalData = {
         width: 130,
         height: 150,
         cells: [
-            { type: "info", content: "식품 등의 표시 · 광고에 관한 법률에 의한 한글표시사항", use_whole_line: true },
+            { type: "info", content: "식품 등의 표시 · 광고에 관한 법률에 의한 한글표시사항", no_break: true, align: "center" },
             { type: "info", header: "[[제품명]]", content: "냉동브로콜리믹스", no_break: true },
             { type: "info", header: "[[식품유형]]", content: "과·채가공품(가열하여 섭취하는 냉동식품)", no_break: true },
             { type: "info", header: "[[업소명 및 소재지]]", content: "제조원 Dujardin Foods NV / 수입판매원 (주)웰팜 / 충청북도 음성군 금왕읍 금일로 546번길 87", use_whole_line: true },
@@ -87,7 +243,7 @@ const verticalData = {
                 content: "본 제품은 공정거래 위원회고시 소비자분쟁해결기준에 의거 교환 또는 보상받을 수 있습니다. 반품 및 교환 구입처 및 수입판매원 보관방법 -18℃ 이하 냉동보관 해동방법 별도의 해동 없음 주의사항 · 이미 냉동된 바 있으니 해동 후 재냉동시키지 마시길 바랍니다. · 냉동상태에서는 단단할 수 있으니 주의하시기 바랍니다. · 이 제품은 알류(계란), 우유, 메밀, 땅콩, 대두, 밀, 게, 새우, 고등어, 복숭아, 토마토, 돼지고기, 아황산류, 호두, 쇠고기, 닭고기, 오징어, 조개류(굴, 전복, 홍합 포함), 잣을 사용한 제품과 같은 제조 시설에서 제조하고 있습니다. · 특정원료에 대해 알레르기가 있으신 분은 반드시 원재료를 확인하시고 섭취하시기 바랍니다. 자연원행복센터 080-707-2547 (www.jyone.co.kr) · 부정 · 불량 식품 신고는 국번없이 1399",
                 use_whole_line: true
             },
-            { type: "placeholder", label: "비닐류 LDPE", width: 12, height: 12 },
+            { type: "placeholder", label: "비닐류 LDPE", width: 20, height: 20 },
             {
                 type: "info",
                 header: "[[요리법 및 활용법]]",
@@ -158,7 +314,7 @@ function renderGUI() {
     globalPaddingInput.value = appState.label_config.global_padding;
     cellPaddingInput.value = appState.label_config.cell_padding;
     borderThicknessInput.value = appState.label_config.border_thickness;
-    
+
     const scalePct = Math.round((appState.label_config.horizontal_scale || 1.0) * 100);
     horizontalScaleSlider.value = scalePct;
     scaleValueDisplay.innerText = scalePct;
@@ -166,14 +322,14 @@ function renderGUI() {
     // Populate Dims
     mainWidthInput.value = appState.main_table.width;
     mainHeightInput.value = appState.main_table.height;
-    if(appState.nutrition_facts) {
+    if (appState.nutrition_facts) {
         nutrWidthInput.value = appState.nutrition_facts.width || 100;
         nutrHeightInput.value = appState.nutrition_facts.height || 100;
     }
 
     // Render Lists
     renderCellList(mainCellsList, appState.main_table.cells, 'main_table');
-    if(appState.nutrition_facts) {
+    if (appState.nutrition_facts) {
         renderCellList(nutritionCellsList, appState.nutrition_facts.cells, 'nutrition_facts');
     }
 }
@@ -197,14 +353,14 @@ function createCellElement(cell, index, tableName) {
     const handle = document.createElement('div');
     handle.className = 'drag-handle';
     handle.innerHTML = '☰';
-    
+
     const content = document.createElement('div');
     content.className = 'cell-content';
 
     // Top row: Type and Delete
     const topRow = document.createElement('div');
     topRow.className = 'cell-row';
-    
+
     const typeSelect = document.createElement('select');
     typeSelect.className = 'cell-input';
     typeSelect.style.width = '120px';
@@ -256,29 +412,29 @@ function createCellElement(cell, index, tableName) {
             </select>
             <input type="text" class="cell-input placeholder-lbl" value="${cell.label || ''}" placeholder="Label Text" style="flex: 1;">
         `;
-        
+
         dimRow.querySelector('.placeholder-w').oninput = (e) => { cell.width = parseFloat(e.target.value) || 0; updatePreview(); };
         dimRow.querySelector('.placeholder-h').oninput = (e) => { cell.height = parseFloat(e.target.value) || 0; updatePreview(); };
         dimRow.querySelector('.placeholder-pos').onchange = (e) => { cell.position = e.target.value; updatePreview(); };
         dimRow.querySelector('.placeholder-lbl').oninput = (e) => { cell.label = e.target.value; updatePreview(); };
-        
+
         content.appendChild(dimRow);
     } else {
         // Info Cell
         const headerRow = document.createElement('div');
         headerRow.className = 'cell-row';
-        
+
         const hasHeaderLabel = document.createElement('label');
         hasHeaderLabel.style.display = 'flex';
         hasHeaderLabel.style.alignItems = 'center';
         hasHeaderLabel.style.gap = '4px';
         hasHeaderLabel.style.fontSize = '0.8rem';
-        
+
         const hasHeaderCheckbox = document.createElement('input');
         hasHeaderCheckbox.type = 'checkbox';
         hasHeaderCheckbox.className = 'header-toggle';
         hasHeaderCheckbox.checked = cell.header !== undefined;
-        
+
         hasHeaderLabel.appendChild(hasHeaderCheckbox);
         hasHeaderLabel.appendChild(document.createTextNode('Header'));
 
@@ -306,7 +462,7 @@ function createCellElement(cell, index, tableName) {
 
         headerRow.appendChild(hasHeaderLabel);
         headerRow.appendChild(headerInput);
-        
+
         const contentRow = document.createElement('div');
         contentRow.className = 'cell-row';
         const contentInput = document.createElement('input');
@@ -322,35 +478,35 @@ function createCellElement(cell, index, tableName) {
 
         const optionsRow = document.createElement('div');
         optionsRow.className = 'cell-options';
-        
+
         // use_whole_line
         const wlLabel = document.createElement('label');
         const wlCheck = document.createElement('input');
         wlCheck.type = 'checkbox';
         wlCheck.checked = !!cell.use_whole_line;
-        wlCheck.onchange = (e) => { 
-            cell.use_whole_line = e.target.checked; 
-            if(cell.use_whole_line) {
+        wlCheck.onchange = (e) => {
+            cell.use_whole_line = e.target.checked;
+            if (cell.use_whole_line) {
                 cell.no_break = false; // Reset mutually exclusive option
                 renderGUI();
             }
-            updatePreview(); 
+            updatePreview();
         };
         wlLabel.appendChild(wlCheck);
         wlLabel.appendChild(document.createTextNode('Whole Line'));
-        
+
         // no_break
         const nbLabel = document.createElement('label');
         const nbCheck = document.createElement('input');
         nbCheck.type = 'checkbox';
         nbCheck.checked = !!cell.no_break;
-        nbCheck.onchange = (e) => { 
-            cell.no_break = e.target.checked; 
-            if(cell.no_break) {
+        nbCheck.onchange = (e) => {
+            cell.no_break = e.target.checked;
+            if (cell.no_break) {
                 cell.use_whole_line = false;
                 renderGUI();
             }
-            updatePreview(); 
+            updatePreview();
         };
         nbLabel.appendChild(nbCheck);
         nbLabel.appendChild(document.createTextNode('No Break'));
@@ -364,7 +520,7 @@ function createCellElement(cell, index, tableName) {
         alignSelect.innerHTML = `<option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>`;
         alignSelect.value = cell.align || 'left';
         alignSelect.onchange = (e) => {
-            if(e.target.value === 'left') delete cell.align;
+            if (e.target.value === 'left') delete cell.align;
             else cell.align = e.target.value;
             updatePreview();
         };
@@ -409,7 +565,7 @@ function bindDragAndDrop() {
             if (draggedItem.dataset.table !== list.dataset.table) return;
 
             const afterElement = getDragAfterElement(list, e.clientY);
-            
+
             document.querySelectorAll('.sortable-list .cell-item').forEach(item => item.classList.remove('drag-over'));
             if (afterElement) {
                 afterElement.classList.add('drag-over');
@@ -437,13 +593,13 @@ function bindDragAndDrop() {
                 newCells.push(appState[tableName].cells[originalIndex]);
             });
             appState[tableName].cells = newCells;
-            
+
             renderGUI();
             updatePreview();
         });
-        
+
         list.addEventListener('dragleave', e => {
-             document.querySelectorAll('.sortable-list .cell-item').forEach(item => item.classList.remove('drag-over'));
+            document.querySelectorAll('.sortable-list .cell-item').forEach(item => item.classList.remove('drag-over'));
         });
     });
 }
@@ -469,13 +625,13 @@ function bindGlobalListeners() {
         const header = panel.querySelector('.accordion-header');
         header.addEventListener('click', () => {
             if (panel.classList.contains('active')) return;
-            
+
             panels.forEach(p => {
                 p.classList.remove('active');
                 p.querySelector('.accordion-body').style.display = 'none';
                 p.querySelector('.accordion-icon').innerText = '▶';
             });
-            
+
             panel.classList.add('active');
             panel.querySelector('.accordion-body').style.display = 'flex';
             panel.querySelector('.accordion-icon').innerText = '▼';
@@ -486,7 +642,7 @@ function bindGlobalListeners() {
     globalPaddingInput.oninput = (e) => { appState.label_config.global_padding = parseFloat(e.target.value) || 0; updatePreview(); };
     cellPaddingInput.oninput = (e) => { appState.label_config.cell_padding = parseFloat(e.target.value) || 0; updatePreview(); };
     borderThicknessInput.oninput = (e) => { appState.label_config.border_thickness = parseFloat(e.target.value) || 0; updatePreview(); };
-    
+
     horizontalScaleSlider.oninput = (e) => {
         const scaleFactor = parseInt(e.target.value) / 100;
         scaleValueDisplay.innerText = e.target.value;
@@ -496,15 +652,15 @@ function bindGlobalListeners() {
 
     mainWidthInput.onchange = (e) => { appState.main_table.width = parseFloat(e.target.value) || 0; updatePreview(); };
     mainHeightInput.onchange = (e) => { appState.main_table.height = parseFloat(e.target.value) || 0; updatePreview(); };
-    nutrWidthInput.onchange = (e) => { 
-        if(!appState.nutrition_facts) appState.nutrition_facts = {cells:[]};
-        appState.nutrition_facts.width = parseFloat(e.target.value) || 0; 
-        updatePreview(); 
+    nutrWidthInput.onchange = (e) => {
+        if (!appState.nutrition_facts) appState.nutrition_facts = { cells: [] };
+        appState.nutrition_facts.width = parseFloat(e.target.value) || 0;
+        updatePreview();
     };
-    nutrHeightInput.onchange = (e) => { 
-        if(!appState.nutrition_facts) appState.nutrition_facts = {cells:[]};
-        appState.nutrition_facts.height = parseFloat(e.target.value) || 0; 
-        updatePreview(); 
+    nutrHeightInput.onchange = (e) => {
+        if (!appState.nutrition_facts) appState.nutrition_facts = { cells: [] };
+        appState.nutrition_facts.height = parseFloat(e.target.value) || 0;
+        updatePreview();
     };
 
     document.getElementById('add-main-cell-btn').onclick = () => {
@@ -514,7 +670,7 @@ function bindGlobalListeners() {
     };
 
     document.getElementById('add-nutr-cell-btn').onclick = () => {
-        if(!appState.nutrition_facts) appState.nutrition_facts = {width:100, height:100, cells:[]};
+        if (!appState.nutrition_facts) appState.nutrition_facts = { width: 100, height: 100, cells: [] };
         appState.nutrition_facts.cells.push({ type: 'info', content: '새로운 셀' });
         renderGUI();
         updatePreview();
@@ -527,7 +683,7 @@ function bindGlobalListeners() {
     document.getElementById('save-btn').onclick = () => {
         const svgElement = svgContainer.querySelector('svg');
         if (!svgElement) return;
-        
+
         if (window.go && window.go.main && window.go.main.App) {
             SaveSVG(svgElement.outerHTML, 'label.svg').then(() => console.log('Saved')).catch(console.error);
         } else {
