@@ -102,7 +102,7 @@ const initialData = {
         ]
     },
     "nutrition_facts": {
-        "width": 66,
+        "width": 70,
         "height": 120,
         "cells": [
             {
