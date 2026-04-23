@@ -5,7 +5,7 @@ const CONSTANTS = {
     MM_TO_PX: 3.7795,
     PT_TO_PX: 1.333,
     PT_TO_MM: 0.3528,
-    FONT_FAMILY: "Nanum Gothic",
+    FONT_FAMILY: "'Nanum Gothic', NanumGothic",
     MIN_OPTIMAL_FONT_SIZE: 10,
     DEFAULT_PLACEHOLDER_SIZE: 20
 };
@@ -14,27 +14,54 @@ const CONSTANTS = {
  * Parses raw string with markup into fragments
  */
 class Parser {
-    static parse(text) {
-        const parts = [];
-        const regex = /(\[\[.*?\]\]|\{\{.*?\}\})/gs;
+    /**
+     * Parses raw string with markup into fragments recursively.
+     * Supports nesting, e.g., [[((Bold Inverted))]]
+     */
+    static parse(text, currentStyles = { invert: false, enforceMinSize: false, bold: false }) {
+        const regex = /(\[\[.*?\]\]|\{\{.*?\}\}|\(\(.*?\)\))/gs;
+        const results = [];
         let lastIndex = 0;
         let match;
+
         while ((match = regex.exec(text)) !== null) {
+            // Text before the token - inherits current styles
             if (match.index > lastIndex) {
-                parts.push({ text: text.substring(lastIndex, match.index), invert: false, enforceMinSize: false });
+                results.push({
+                    text: text.substring(lastIndex, match.index),
+                    ...currentStyles
+                });
             }
-            const token = match[1];
-            if (token.startsWith('[[')) {
-                parts.push({ text: token.substring(2, token.length - 2), invert: true, enforceMinSize: false });
+
+            const token = match[0];
+            const content = token.substring(2, token.length - 2);
+            let nextStyles = { ...currentStyles };
+
+            if (token.startsWith('[[')) nextStyles.invert = true;
+            else if (token.startsWith('{{')) nextStyles.enforceMinSize = true;
+            else if (token.startsWith('((')) nextStyles.bold = true;
+
+            // Recursively parse the content of the token with updated styles
+            const innerParsed = this.parse(content, nextStyles);
+            if (innerParsed.length === 0) {
+                // Ensure even empty tokens return a fragment if they carry styles
+                results.push({ text: "", ...nextStyles });
             } else {
-                parts.push({ text: token.substring(2, token.length - 2), invert: false, enforceMinSize: true });
+                results.push(...innerParsed);
             }
+
             lastIndex = regex.lastIndex;
         }
+
+        // Text after the last token - inherits current styles
         if (lastIndex < text.length) {
-            parts.push({ text: text.substring(lastIndex), invert: false, enforceMinSize: false });
+            results.push({
+                text: text.substring(lastIndex),
+                ...currentStyles
+            });
         }
-        return parts;
+
+        return results;
     }
 }
 
@@ -53,19 +80,21 @@ class Measurer {
      * @param {number} globalScale - Horizontal scale factor (장평).
      * @returns {{width: number, height: number}} Dimensions in mm.
      */
-    measure(text, fontSize, globalScale = 1.0) {
+    measure(text, fontSize, globalScale = 1.0, bold = false) {
         this.ctx.save();
         const fontSizePx = fontSize * CONSTANTS.PT_TO_PX;
-        this.ctx.font = `${fontSizePx}px "${CONSTANTS.FONT_FAMILY}", sans-serif`;
-        
+        const fontWeight = bold ? "bold " : "";
+        this.ctx.font = `${fontWeight}${fontSizePx}px "${CONSTANTS.FONT_FAMILY}", sans-serif`;
+
         const metrics = this.ctx.measureText(text);
         let width = (metrics.width / CONSTANTS.MM_TO_PX) * globalScale;
 
         // Fallback for zero-width due to missing font loading
         if (width <= 0 && text.length > 0) {
-            width = text.length * (fontSize * CONSTANTS.PT_TO_MM * 0.5); 
+            // Using a more conservative multiplier (around 0.5 for Gothic fonts)
+            width = text.length * (fontSize * CONSTANTS.PT_TO_MM * (bold ? 0.55 : 0.48));
         }
-        
+
         this.ctx.restore();
 
         return {
@@ -102,10 +131,10 @@ class LayoutEngine {
         if (padB === undefined) padB = this.config.global_padding || 2;
         if (padL === undefined) padL = this.config.global_padding || 2;
         if (padR === undefined) padR = this.config.global_padding || 2;
-        
+
         const cellPadding = this.config.cell_padding || 0;
         const totalWidth = w;
-        
+
         let currentY = padT;
         let blocks = [];
         let activeBlock = this._createFullBlock(currentY, totalWidth, padL, padR);
@@ -125,13 +154,13 @@ class LayoutEngine {
             }
 
             const lineY = activeBlock.y + activeBlock.h;
-            for(let f of currentLine.fragments) {
+            for (let f of currentLine.fragments) {
                 f.y = lineY;
             }
 
             activeBlock.lines.push(currentLine);
             activeBlock.h += currentLine.h;
-            
+
             if (activeBlock.y + activeBlock.h > h - padB) {
                 overflow = true;
             }
@@ -176,18 +205,30 @@ class LayoutEngine {
                 const cellFragments = [];
                 let totalCellW = 0;
                 let maxTextHeight = 0;
-                
-                for (const frag of fragments) {
+
+                for (let i = 0; i < fragments.length; i++) {
+                    const frag = fragments[i];
                     const fragFontSize = frag.enforceMinSize ? Math.max(fontSize, 12) : fontSize;
-                    const size = this.measurer.measure(frag.text, fragFontSize, this.config.horizontal_scale);
-                    const fragW = size.width + (cellPadding * 2);
-                    cellFragments.push({ text: frag.text, width: fragW, textW: size.width, height: size.height, invert: frag.invert, fs: fragFontSize });
+                    const size = this.measurer.measure(frag.text, fragFontSize, this.config.horizontal_scale, frag.bold);
+
+                    // Refined Smart padding: 
+                    // Only apply cellPadding once per side, even if it's both a cell boundary AND inverted.
+                    const padL = (i === 0 || frag.invert) ? cellPadding : 0;
+                    const padR = (i === fragments.length - 1 || frag.invert) ? cellPadding : 0;
+
+                    const fragW = size.width + padL + padR;
+                    cellFragments.push({
+                        text: frag.text, width: fragW, textW: size.width,
+                        height: size.height, invert: frag.invert, bold: frag.bold,
+                        fs: fragFontSize, paddingLeft: padL
+                    });
                     totalCellW += fragW;
                     maxTextHeight = Math.max(maxTextHeight, size.height);
                 }
-                
+
                 const cellH = maxTextHeight + (cellPadding * 2);
-                
+
+
                 if (currentLine.w + totalCellW > activeBlock.w && currentLine.fragments.length > 0) {
                     pushLineToBlock();
                 }
@@ -203,18 +244,19 @@ class LayoutEngine {
                     for (const cf of cellFragments) { cf.width *= adjustRatio; cf.textW *= adjustRatio; }
                 }
 
-                let drawXOffset = currentLine.w;
-                for (const cf of cellFragments) {
+                let drawXOffset = currentLine.w; // Revert shift
+                for (let i = 0; i < cellFragments.length; i++) {
+                    const cf = cellFragments[i];
                     currentLine.fragments.push({
-                        offsetX: currentLine.w, 
+                        offsetX: currentLine.w,
                         fragOffsetX: drawXOffset,
-                        width: totalCellW, 
-                        fragWidth: cf.width, 
-                        textWidth: cf.textW, 
-                        height: cellH, 
+                        width: totalCellW,
+                        fragWidth: cf.width,
+                        textWidth: cf.textW,
+                        height: cellH,
                         textHeight: cf.height,
-                        text: cf.text, invert: cf.invert, fs: cf.fs, isGroup: true, 
-                        padding: cellPadding, paddingLeft: drawPaddingLeft,
+                        text: cf.text, invert: cf.invert, bold: cf.bold, fs: cf.fs, isGroup: true,
+                        padding: cellPadding, paddingLeft: cf.paddingLeft,
                         scale: appliedScale, cellIdx: cellIdx, align: cell.align || 'left'
                     });
                     drawXOffset += cf.width;
@@ -228,28 +270,32 @@ class LayoutEngine {
                     const fragFontSize = frag.enforceMinSize ? Math.max(fontSize, 12) : fontSize;
                     const words = frag.text.split(' ');
                     words.forEach((w, idx) => {
-                        allWords.push({ text: w + (idx === words.length - 1 ? '' : ' '), invert: frag.invert, fs: fragFontSize });
+                        allWords.push({ text: w + (idx === words.length - 1 ? '' : ' '), invert: frag.invert, bold: frag.bold, fs: fragFontSize });
                     });
                 }
-                
+
                 while (allWords.length > 0) {
                     let count = 0, lastFitW = 0, lastFitH = 0;
                     let currentFragInvert = allWords[0].invert;
+                    let currentFragBold = allWords[0].bold;
                     let currentFragFs = allWords[0].fs;
 
                     for (let j = 1; j <= allWords.length; j++) {
-                        if (allWords[j - 1].invert !== currentFragInvert || allWords[j - 1].fs !== currentFragFs) break;
-                        
+                        if (allWords[j - 1].invert !== currentFragInvert || allWords[j - 1].bold !== currentFragBold || allWords[j - 1].fs !== currentFragFs) break;
+
                         const subText = allWords.slice(0, j).map(w => w.text).join('');
-                        const size = this.measurer.measure(subText, currentFragFs, this.config.horizontal_scale);
-                        const testW = size.width + (cellPadding * 2);
+                        const size = this.measurer.measure(subText, currentFragFs, this.config.horizontal_scale, currentFragBold);
+
+                        const padL = (currentLine.w === 0 || currentFragInvert) ? cellPadding : 0;
+                        const padR = (allWords.length === j || currentFragInvert) ? cellPadding : 0;
+                        const testW = size.width + padL + padR;
                         const testH = size.height + (cellPadding * 2);
-                        
-                        if (currentLine.w + testW > activeBlock.w) {
+
+                        if (currentLine.w + testW + (allWords.length === j ? 0 : cellPadding) > activeBlock.w) {
                             if (currentLine.w > 0 || j > 1) break;
-                            count = 1; lastFitW = testW; lastFitH = testH; break;
+                            count = 1; lastFitW = size.width + padL + padR; lastFitH = testH; break;
                         }
-                        count = j; lastFitW = testW; lastFitH = testH;
+                        count = j; lastFitW = size.width + padL + padR; lastFitH = testH;
                     }
 
                     if (count === 0) {
@@ -259,21 +305,23 @@ class LayoutEngine {
                     }
 
                     const fitText = allWords.slice(0, count).map(w => w.text).join('');
-                    const textWidth = lastFitW - (cellPadding * 2);
+                    const finalPadL = (currentLine.w === 0 || currentFragInvert) ? cellPadding : 0;
+                    const finalPadR = (allWords.length === count || currentFragInvert) ? cellPadding : 0;
+                    const textWidth = lastFitW - finalPadL - finalPadR;
 
                     currentLine.fragments.push({
                         offsetX: currentLine.w, width: lastFitW, height: lastFitH,
                         textHeight: lastFitH - (cellPadding * 2), textWidth: textWidth,
-                        text: fitText, invert: currentFragInvert, fs: currentFragFs, 
-                        padding: cellPadding, paddingLeft: drawPaddingLeft,
-                        scale: this.config.horizontal_scale || 1.0, cellIdx: cellIdx, 
+                        text: fitText, invert: currentFragInvert, bold: currentFragBold, fs: currentFragFs,
+                        padding: cellPadding, paddingLeft: finalPadL,
+                        scale: this.config.horizontal_scale || 1.0, cellIdx: cellIdx,
                         align: cell.align || 'left', isGroup: false
                     });
-                    
+
                     currentLine.w += lastFitW;
                     currentLine.h = Math.max(currentLine.h, lastFitH);
                     allWords = allWords.slice(count);
-                    
+
                     if (overflow) break;
                 }
             }
@@ -281,31 +329,32 @@ class LayoutEngine {
             if (cell.use_whole_line) pushLineToBlock();
             cellIdx++;
         }
-        
+
         pushActiveBlock();
 
         const layoutCells = [];
         const placeholders = [];
-        
+
         for (const block of blocks) {
             if (isSplitBlock(block)) {
                 const pX = block.type === 'split-left' ? padL : totalWidth - padR - block.pW;
-                
+
                 const pParsed = Parser.parse(block.pLabel || '');
                 const pInvert = pParsed.some(f => f.invert);
+                const pBold = pParsed.some(f => f.bold);
                 const pText = pParsed.map(f => f.text).join('');
-                
+
                 let pFsPt = 10; // Base font size for measurement
-                const size = this.measurer.measure(pText, pFsPt, 1.0);
-                
+                const size = this.measurer.measure(pText, pFsPt, 1.0, pBold);
+
                 const availableW = block.pW - 2; // 1mm padding each side
                 const availableH = block.actualH - 2; // 1mm padding top/bottom
-                
+
                 if (size.width > 0 && availableW > 0) {
                     // Scale font size to fit width
                     const scaleW = availableW / size.width;
                     const scaleH = availableH > 0 ? availableH / size.height : scaleW;
-                    
+
                     // Use the smaller scale to ensure it fits both width and height
                     const finalScale = Math.min(scaleW, scaleH);
                     pFsPt = pFsPt * finalScale;
@@ -318,23 +367,24 @@ class LayoutEngine {
                     height: block.actualH,
                     label: pText,
                     invert: pInvert,
+                    bold: pBold,
                     textWidth: availableW, // Use availableW for textLength to perfectly flush it
                     fs: pFsPt
                 });
             }
-            
+
             for (const line of block.lines) {
                 let uniqueOffsets = [];
-                for(let f of line.fragments) {
+                for (let f of line.fragments) {
                     if (!uniqueOffsets.includes(f.offsetX)) uniqueOffsets.push(f.offsetX);
                 }
-                uniqueOffsets.sort((a,b) => a - b);
-                
-                for(let f of line.fragments) {
+                uniqueOffsets.sort((a, b) => a - b);
+
+                for (let f of line.fragments) {
                     let idx = uniqueOffsets.indexOf(f.offsetX);
-                    let nextOffset = (idx < uniqueOffsets.length - 1) ? uniqueOffsets[idx+1] : block.w;
+                    let nextOffset = (idx < uniqueOffsets.length - 1) ? uniqueOffsets[idx + 1] : block.w;
                     f.width = nextOffset - f.offsetX;
-                    
+
                     f.x = block.x + f.offsetX;
                     if (f.isGroup) {
                         f.fragX = block.x + f.fragOffsetX;
@@ -349,14 +399,14 @@ class LayoutEngine {
 
         const logicalGroups = this._buildLogicalGroups(blocks);
 
-        return { 
-            cells: layoutCells, 
+        return {
+            cells: layoutCells,
             logicalGroups: logicalGroups,
-            placeholders: placeholders, 
-            overflow: overflow, 
-            w: w, 
+            placeholders: placeholders,
+            overflow: overflow,
+            w: w,
             padding: { t: padT, b: padB, l: padL, r: padR },
-            usedHeight: currentY + padB 
+            usedHeight: currentY + padB
         };
     }
 
@@ -365,7 +415,7 @@ class LayoutEngine {
      */
     _buildLogicalGroups(blocks) {
         const groups = [];
-        
+
         for (const block of blocks) {
             for (const line of block.lines) {
                 const cellsByIdx = {};
@@ -380,18 +430,18 @@ class LayoutEngine {
                     }
                     const g = cellsByIdx[c.cellIdx];
                     g.cells.push(c);
-                    
+
                     const fx = c.isGroup ? c.fragX : c.x;
                     const fw = c.isGroup ? c.fragWidth : c.width;
                     const sx = c.x;
                     const sw = c.width;
-                    
+
                     g.contentMinX = Math.min(g.contentMinX, fx);
                     g.contentMaxX = Math.max(g.contentMaxX, fx + fw);
                     g.minX = Math.min(g.minX, sx);
                     g.maxX = Math.max(g.maxX, sx + sw);
                 }
-                for(let key in cellsByIdx) {
+                for (let key in cellsByIdx) {
                     groups.push(cellsByIdx[key]);
                 }
             }
@@ -410,7 +460,7 @@ class SVGBuilder {
         // Draw the global background and outer border for the entire SVG
         svg += `<rect x="0" y="0" width="${totalW}" height="${totalH}" fill="white" stroke="black" stroke-width="${borderThickness}"/>`;
 
-        for(const config of layouts) {
+        for (const config of layouts) {
             if (!config.layout) continue;
             svg += this._renderTable(config.layout, config.fs, config.x, config.y, borderThickness);
         }
@@ -422,7 +472,7 @@ class SVGBuilder {
     static _renderTable(layout, fs, tX, tY, borderThickness) {
         const p = layout.padding || { t: 0, b: 0, l: 0, r: 0 };
         let group = `<g transform="translate(${tX}, ${tY})">`;
-        
+
         // Draw the inner background and border
         group += `<rect x="${p.l}" y="${p.t}" width="${layout.w - p.l - p.r}" height="${layout.usedHeight - p.t - p.b}" fill="white" stroke="black" stroke-width="${borderThickness}"/>`;
 
@@ -430,7 +480,7 @@ class SVGBuilder {
         for (const g of layout.logicalGroups) {
             const contentW = g.contentMaxX - g.contentMinX;
             const effectiveW = g.maxX - g.minX;
-            
+
             let shiftX = 0;
             if (g.align === 'right') shiftX = effectiveW - contentW;
             else if (g.align === 'center') shiftX = (effectiveW - contentW) / 2;
@@ -438,10 +488,10 @@ class SVGBuilder {
             for (const c of g.cells) {
                 const drawPadding = c.padding || 0;
                 const drawPaddingLeft = c.paddingLeft || drawPadding;
-                
+
                 const topTouch = layout.cells.some(other => other.cellIdx === c.cellIdx && Math.abs(other.y + other.height - c.y) < 0.001 && Math.max(other.x, c.x) < Math.min(other.x + other.width, c.x + c.width));
                 const bottomTouch = layout.cells.some(other => other.cellIdx === c.cellIdx && Math.abs(c.y + g.maxH - other.y) < 0.001 && Math.max(other.x, c.x) < Math.min(other.x + other.width, c.x + c.width));
-                
+
                 // 1. Render Inversion Background
                 if (c.invert) {
                     const isOnlyFrag = (g.cells.length === 1);
@@ -454,7 +504,7 @@ class SVGBuilder {
                 // 2. Render Outer Borders
                 const x1 = g.x;
                 const x2 = g.x + effectiveW;
-                
+
                 // Only draw border once per logical group
                 if (c === g.cells[0]) {
                     const stroke = `stroke="black" stroke-width="${borderThickness}"`;
@@ -466,15 +516,19 @@ class SVGBuilder {
                 }
 
                 // 3. Render Text
-                const centerY = c.y + (g.maxH / 2);
+                const centerY = c.y + (g.maxH / 2) + 0.2; // Minor adjustment (+0.2mm) for better visual centering with Nanum Gothic
+
                 let textX = (c.isGroup ? c.textX : c.x + drawPaddingLeft) + shiftX;
                 const textColor = c.invert ? 'white' : 'black';
-                
+
                 const finalScale = (c.scale || 1.0);
-                const textLengthAttr = finalScale !== 1.0 ? ` textLength="${c.textWidth}" lengthAdjust="spacingAndGlyphs"` : "";
-                
+                // Always provide textLength to ensure browser renders exactly as measured in Canvas
+                const textLengthAttr = ` textLength="${c.textWidth}" lengthAdjust="spacingAndGlyphs"`;
+
+
                 const drawFs = c.fs || fs;
-                group += `<text x="${textX}" y="${centerY}" font-family="${CONSTANTS.FONT_FAMILY}" font-size="${drawFs * CONSTANTS.PT_TO_MM}" fill="${textColor}" dominant-baseline="central"${textLengthAttr} xml:space="preserve">${c.text}</text>`;
+                const weightAttr = c.bold ? ' font-weight="bold"' : '';
+                group += `<text x="${textX}" y="${centerY}" font-family="${CONSTANTS.FONT_FAMILY}" font-size="${drawFs * CONSTANTS.PT_TO_MM}" fill="${textColor}" dominant-baseline="central"${textLengthAttr}${weightAttr} xml:space="preserve">${c.text}</text>`;
             }
         }
 
@@ -485,16 +539,17 @@ class SVGBuilder {
             } else {
                 group += `<rect x="${p.x}" y="${p.y}" width="${p.width}" height="${p.height}" fill="none" stroke="black" stroke-width="${borderThickness}"/>`;
             }
-            
+
             if (p.label) {
-                const centerY = p.y + (p.height / 2);
+                const centerY = p.y + (p.height / 2) + 0.2;
                 const textColor = p.invert ? 'white' : '#888';
                 const textLengthAttr = p.textWidth ? ` textLength="${p.textWidth}" lengthAdjust="spacingAndGlyphs"` : "";
-                
-                group += `<text x="${p.x + 1}" y="${centerY}" font-family="${CONSTANTS.FONT_FAMILY}" font-size="${(p.fs || 6) * CONSTANTS.PT_TO_MM}" fill="${textColor}" dominant-baseline="central"${textLengthAttr} xml:space="preserve">${p.label}</text>`;
+
+                const weightAttr = p.bold ? ' font-weight="bold"' : '';
+                group += `<text x="${p.x + 1}" y="${centerY}" font-family="${CONSTANTS.FONT_FAMILY}" font-size="${(p.fs || 6) * CONSTANTS.PT_TO_MM}" fill="${textColor}" dominant-baseline="central"${textLengthAttr}${weightAttr} xml:space="preserve">${p.label}</text>`;
             }
         }
-        
+
         // Final borderline overlap for clean edges
         group += `<rect x="${p.l}" y="${p.t}" width="${layout.w - p.l - p.r}" height="${layout.usedHeight - p.t - p.b}" fill="none" stroke="black" stroke-width="${borderThickness}"/>`;
 
@@ -519,14 +574,14 @@ export class Renderer {
         const mode = this.config.nutrition_mode || 'bottom';
         const savedScale = this.config.horizontal_scale || 1.0;
         const nutritionConfig = this.nutritionFacts || { width: 0, height: 0, cells: [] };
-        
+
         let mainWidth = this.mainTable.width || 100;
         let mainHeight = this.mainTable.height || 100;
         let nutritionX = 0, nutritionY = 0;
         let mainX = 0, mainY = 0;
 
         const layoutEngine = new LayoutEngine(this.config, this.measurer);
-        
+
         const pad = this.config.global_padding || 2;
         let mainPad = { t: pad, b: pad, l: pad, r: pad };
         let nutrPad = { t: pad, b: pad, l: pad, r: pad };
@@ -544,7 +599,7 @@ export class Renderer {
 
         // --- PASS 1: Baseline Font Size (Forced 1.0 Scale) ---
         this.config.horizontal_scale = 1.0;
-        
+
         // Inline findOptimalFontSize
         let mainFontSize = CONSTANTS.MIN_OPTIMAL_FONT_SIZE;
         for (let size = 20; size >= CONSTANTS.MIN_OPTIMAL_FONT_SIZE; size -= 0.2) {
@@ -553,7 +608,7 @@ export class Renderer {
                 break;
             }
         }
-        
+
         let nutritionFontSize = nutritionConfig.cells && nutritionConfig.cells.length > 0 ? mainFontSize : 0;
 
         // --- PASS 2: Final Flow Calculation (User Scale) ---
@@ -564,7 +619,7 @@ export class Renderer {
         if (nutritionFontSize > 0) {
             let nutrW = mode === 'bottom' ? mainWidth : (nutritionConfig.width || 100);
             let nutrH = (mode === 'left' || mode === 'right') ? mainHeight : (nutritionConfig.height || 100);
-            
+
             if (mode === 'bottom') {
                 nutritionY = mainY + mainLayout.usedHeight;
                 nutritionX = mainX;
@@ -592,7 +647,7 @@ export class Renderer {
         // Calculate Final Viewport Bounds
         let actualW = mainX + mainLayout.w;
         let actualH = mainY + mainLayout.usedHeight;
-        
+
         if (nutritionLayout) {
             actualW = Math.max(actualW, nutritionX + (nutritionLayout.w || 0));
             actualH = Math.max(actualH, nutritionY + (nutritionLayout.usedHeight || 0));
@@ -600,13 +655,13 @@ export class Renderer {
 
         // Build SVG
         const layoutsToRender = [];
-        
+
         if (nutritionLayout && mode === 'none') {
             layoutsToRender.push({ layout: nutritionLayout, fs: nutritionFontSize, x: nutritionX, y: nutritionY, padding: nutritionLayout.padding });
         }
-        
+
         layoutsToRender.push({ layout: mainLayout, fs: mainFontSize, x: mainX, y: mainY, padding: mainLayout.padding });
-        
+
         if (nutritionLayout && mode !== 'none') {
             layoutsToRender.push({ layout: nutritionLayout, fs: nutritionFontSize, x: nutritionX, y: nutritionY, padding: nutritionLayout.padding });
         }
